@@ -1,0 +1,563 @@
+%{
+/*
+// Copyright (c) 2015 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+*/
+
+#include <iostream>
+#include <string>
+#include <stdio.h>
+
+#include "debug.h"
+#include "enums.h"
+#include "export.h"
+#include "expression.h"
+#include "function.h"
+#include "function_field.h"
+#include "local.h"
+#include "module.h"
+#include "simple.h"
+#include "wasm_assert.h"
+#include "wasm_asserts.h"
+#include "wasm_file.h"
+
+extern int yyerror (const std::string& s);
+extern int yylex (void);
+
+%}
+
+%code requires {
+  class Expression;
+  enum ETYPE;
+  class FunctionField;
+  class Local;
+  class Operation;
+  enum OPERATION;
+  class ValueHolder;
+  class Variable;
+  class WasmAssert;
+  class WasmAsserts;
+  class WasmExport;
+  class WasmFunction;
+  class WasmModule;
+}
+
+%union {
+  bool b;
+  int64_t l;
+  double d;
+  char* string;
+  void* voidptr;
+
+  WasmExport* e;
+  ETYPE et;
+  Expression* ex;
+  WasmFunction* f;
+  FunctionField* ff;
+  Local* local;
+  WasmModule* m;
+  Operation* o;
+  OPERATION op;
+  Variable* v;
+  ValueHolder* vh;
+  WasmAssert* wa;
+  WasmAsserts* was;
+}
+
+%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token INTEGER STRING FLOAT
+%token IDENTIFIER
+%token MODULE_TOKEN
+%token FUNCTION_TOKEN
+%token RESULT_TOKEN
+%token RETURN_TOKEN
+%token EXPORT_TOKEN
+%token PARAM_TOKEN
+%token TYPE
+%token NEQ EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
+%token LE LT GE GT
+%token ASSERT_EQ_TOKEN
+%token ASSERT_TRAP_TOKEN
+%token INVOKE_TOKEN
+%token CALL_TOKEN
+%token LOCAL_TOKEN
+%token CONST
+%token LABEL
+
+%type<voidptr> FUNCTION_FIELDS
+%type<voidptr> EXPRESSIONS
+
+%type<b> SIGN
+%type<d> FLOAT
+%type<e> EXPORT
+%type<et> TYPE
+%type<ex> CALL BREAK BLOCK
+%type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT
+%type<f> FUNCTION
+%type<ff> SIMPLE_FIELD FUNCTION_FIELD
+%type<l> RESULT INTEGER
+%type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
+%type<m> MODULE MODULE_ELEMS
+%type<o> BINOP UNOP
+%type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP
+%type<op> BINOP_OPER UNOP_OPER 
+%type<op> NEQ EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
+%type<op> LE LT GE GT
+%type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
+%type<v> VARIABLE_OR_NOT VARIABLE
+%type<vh> VALUE
+%type<wa> ASSERT ASSERT_TRAP ASSERT_EQ
+%type<was> ASSERTS
+
+%%
+
+FILE:
+  MODULE
+  ASSERTS {
+    // Currently, we only accept one module and we ignore the asserts.
+    WasmModule* module = $1;
+    WasmAsserts* asserts = $2;
+
+    // Create the file now.
+    WasmFile* file = new WasmFile();
+    file->AddModule(module);
+    file->AddAsserts(asserts);
+
+    // Generate the file code.
+    file->Generate();
+
+    // Dump for debug.
+    file->Dump();
+  }
+
+MODULE:
+  '('
+  MODULE_TOKEN
+  MODULE_ELEMS
+  ')' {
+    $$ = $3;
+  }
+
+MODULE_ELEMS:
+  FUNCTION MODULE_ELEMS {
+    WasmModule* module = $2;
+    WasmFunction* f = $1;
+    module->AddFunction(f);
+    $$ = module;
+  } |
+  EXPORT MODULE_ELEMS {
+    WasmModule* module = $2;
+    WasmExport* e = $1;
+    module->AddExport(e);
+    $$ = module;
+  } | {
+    $$ = new WasmModule();
+  }
+
+EXPORT: '('
+    EXPORT_TOKEN
+    STRING
+    VARIABLE
+    ')' {
+      std::string s = $3;
+      Variable* var = $4;
+
+      WasmExport* exp = new WasmExport(s, var);
+      $$ = exp;
+    }
+
+TYPE_LIST:
+  TYPE TYPE_LIST {
+    Local* local = $2;
+    ETYPE type = $1;
+    local->AddElem(type);
+    $$ = local;
+  } |
+  { $$ = new Local(); }
+
+LOCAL_ELEMS:
+  TYPE TYPE_LIST {
+    ETYPE type = $1;
+    Local* local = $2;
+    local->AddElem(type);
+    $$ = local;
+  } |
+  IDENTIFIER TYPE {
+    ETYPE type = $2;
+    Local* local = new Local(type, $1);
+    $$ = local;
+  }
+
+LOCAL:
+  LOCAL_TOKEN
+  LOCAL_ELEMS { $$ = $2; }
+
+SIMPLE_FIELD:
+   PARAM {
+     Local* param = $1;
+     $$ = new ParamField(param);
+     } |
+   RESULT {
+     $$ = new ResultField($1);
+     } |
+   EXPRESSION_INNER{
+     Expression* expression = $1;
+     $$ = new ExpressionField(expression);
+     } |
+   LOCAL {
+     Local* local = $1;
+     $$ = new LocalField(local);
+     }
+
+FUNCTION_FIELD:
+    '(' SIMPLE_FIELD ')' { $$ = $2; }
+
+FUNCTION_FIELDS:
+    FUNCTION_FIELD FUNCTION_FIELDS {
+      std::list<FunctionField*>* list = static_cast<std::list<FunctionField*>* >($2);
+      FunctionField* field = $1;
+      list->push_front(field);
+      $$ = list;
+    }
+    | /* Empty */ { $$ = new std::list<FunctionField*>(); }
+
+IDENTIFIER_OR_NOT:
+    IDENTIFIER {
+      $$ = $1;
+    } |
+    /* Empty */
+    { $$ = nullptr; }
+
+FUNCTION: '('
+    FUNCTION_TOKEN
+    IDENTIFIER_OR_NOT
+    FUNCTION_FIELDS
+    ')' {
+      WasmFunction* f = nullptr;
+      char* name = $3;
+      std::list<FunctionField*>* fields = static_cast<std::list<FunctionField*>* >($4);
+
+      if (name != nullptr) {
+        f = new WasmFunction(fields, name);
+      } else {
+        f = new WasmFunction(fields);
+      }
+      $$ = f;
+    }
+
+BINOP_OPER:
+  LE { $$ = $1; } |
+  LT { $$ = $1; } |
+  GE { $$ = $1; } |
+  GT { $$ = $1; } |
+  NEQ { $$ = $1; } |
+  EQ { $$ = $1; } |
+  DIV { $$ = $1; } |
+  ADD { $$ = $1; } |
+  SUB { $$ = $1; } |
+  MUL { $$ = $1; } |
+  REM { $$ = $1; } |
+  AND { $$ = $1; } |
+  OR { $$ = $1; } |
+  XOR { $$ = $1; } |
+  SHL { $$ = $1; } |
+  SHR { $$ = $1; }
+
+UNOP_OPER:
+  CLZ { $$ = $1; } |
+  CTZ { $$ = $1; } |
+  POPCNT { $$ = $1; }
+
+SIGN:
+  's' { $$ = true; } | 
+  'u' { $$ = false; }
+
+POTENTIAL_SIGNED_UNOP:
+  UNOP_OPER { $$ = new Operation($1); } |
+  UNOP_OPER '_' SIGN {
+    $$ = new Operation($1, $3);
+  }
+
+POTENTIAL_SIGNED_BINOP:
+  BINOP_OPER { $$ = new Operation($1); } |
+  BINOP_OPER '_' SIGN {
+    $$ = new Operation($1, $3);
+  }
+
+BINOP:
+    TYPE '.' POTENTIAL_SIGNED_BINOP {
+      Operation* op = $3;
+      ETYPE type = $1;
+      op->SetType(type);
+      $$ = op;
+    }
+
+UNOP:
+    TYPE '.' POTENTIAL_SIGNED_UNOP {
+      Operation* op= $3;
+      ETYPE type = $1;
+      op->SetType(type);
+      $$ = op;
+    }
+
+EXPRESSIONS:
+  EXPRESSION EXPRESSIONS {
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($2);
+    Expression* expr = $1;
+    list->push_front(expr);
+    $$ = list;
+  }
+  | /* Empty */ { $$ = new std::list<Expression*>(); }
+
+VARIABLE: INTEGER {
+    $$ = new Variable($1);
+  } |
+  IDENTIFIER {
+    $$ = new Variable($1);
+  }
+
+EXPRESSION_OR_NOT:
+  EXPRESSION { $$ = $1; }
+  | { $$ = nullptr; }
+
+CALL:
+  CALL_TOKEN VARIABLE EXPRESSIONS {
+    Variable* var = $2;
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
+    $$ = new CallExpression(var, list);
+  }
+
+VALUE:
+  FLOAT {
+    $$ = new ValueHolder($1);
+  } |
+  INTEGER {
+    $$ = new ValueHolder($1);
+  }
+
+EXPRESSION: '(' EXPRESSION_INNER ')' { $$ = $2; }
+
+VARIABLE_OR_NOT:
+  VARIABLE { $$ = $1; }
+  | { $$ = nullptr; }
+
+BREAK:
+  BREAK_TOKEN {
+    $$ = new BreakExpression();
+  } |
+  BREAK_TOKEN VARIABLE EXPRESSION_OR_NOT {
+    Variable* var = $2;
+    Expression* expr = $3;
+    $$ = new BreakExpression(var, expr);
+  }
+
+BLOCK:
+  BLOCK_TOKEN EXPRESSIONS {
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($2);
+    $$ = new BlockExpression(list);
+  }
+
+EXPRESSION_INNER:
+    NOP { $$ = nullptr; } |
+    BINOP EXPRESSION EXPRESSION {
+      Operation* op = $1;
+      Expression* left = $2;
+      Expression* right = $3;
+      Binop* binop = new Binop(op, left, right);
+      $$ = binop;
+      } |
+    UNOP EXPRESSION {
+      Operation* op = $1;
+      Expression* only = $2;
+      Unop* unop = new Unop(op, only);
+      $$ = unop;
+      } |
+    TYPE '.' CONST VALUE {
+      ETYPE type = $1;
+      ValueHolder* value = $4;
+      Const* const_expr = new Const(type, value);
+      $$ = const_expr;
+    } |
+    GET_LOCAL VARIABLE {
+      Variable* var = $2;
+      GetLocal* get_local = new GetLocal(var);
+      $$ = get_local;
+    } |
+    SET_LOCAL VARIABLE EXPRESSION {
+      Variable* var = $2;
+      Expression* value = $3;
+      SetLocal* set_local = new SetLocal(var, value);
+      $$ = set_local;
+    } |
+    IF EXPRESSION EXPRESSION EXPRESSION {
+      Expression* cond = $2;
+      Expression* true_cond = $3;
+      Expression* false_cond = $4;
+      IfExpression* if_expression = new IfExpression(cond, true_cond, false_cond);
+      $$ = if_expression;
+    } |
+    IF EXPRESSION EXPRESSION {
+      Expression* cond = $2;
+      Expression* true_cond = $3;
+      IfExpression* if_expression = new IfExpression(cond, true_cond);
+      $$ = if_expression;
+    } |
+    CALL {
+      $$ = $1;
+    } |
+    LABEL VARIABLE_OR_NOT EXPRESSION {
+      Variable* var = $2;
+      Expression* expr = $3;
+      LabelExpression* label = new LabelExpression(var, expr);
+      $$ = label;
+    } |
+    LOOP EXPRESSION {
+      Expression* expr = $2;
+      LoopExpression* loop = new LoopExpression(expr);
+      $$ = loop;
+    } |
+    BREAK { $$ = $1; } |
+    BLOCK { $$ = $1; } |
+    RETURN_TOKEN EXPRESSION {
+      Expression* result = $2;
+      ReturnExpression* return_expr = new ReturnExpression(result);
+      $$ = return_expr;
+    }
+
+PARAM:
+   PARAM_TOKEN
+   LOCAL_ELEMS {
+       // For now, Parameters can be handled as if locals, let see if that holds.
+       $$ = $2;
+     }
+
+RESULT: RESULT_TOKEN TYPE { $$ = $2; }
+
+/*
+ * Ignoring the asserts for now, we really just want to compile the functions
+ * but want to be compatible with the example files in the ml-proto project.
+ */
+
+ASSERTS:
+  ASSERT ASSERTS {
+    WasmAsserts* asserts = $2;
+    WasmAssert* the_assert = $1;
+
+    asserts->AddAssert(the_assert);
+
+    // Propagate it up.
+    $$ = $2;
+  }
+  | {
+    $$ = new WasmAsserts();
+  }
+
+ASSERT:
+  ASSERT_EQ {
+    $$ = $1;
+  } |
+  ASSERT_TRAP {
+    $$ = $1;
+  }
+
+ASSERT_EQ:
+  '('
+  ASSERT_EQ_TOKEN
+    '(' INVOKE_TOKEN STRING EXPRESSIONS ')'
+    EXPRESSIONS
+  ')' {
+    // Let's just create the IR that calls and compares the call and the expected result.
+    char* name = $5;
+    std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
+    std::list<Expression*>* results = static_cast<std::list<Expression*>* >($8);
+
+    // TODO: handle multiple returns.
+    assert(results->size() == 1);
+
+    Variable* var = new Variable(name);
+
+    // Create the call.
+    CallExpression* call = new CallExpression(var, params);
+
+    // Now get the result, we assume only 1.
+    Expression* expr = results->back();
+
+    // Create the eq operation.
+    //   VOID type let's the code generator choose later.
+    ETYPE type = VOID;
+    Operation* operation = new Operation(EQ_OPER, type);
+
+    // Create the binop.
+    Binop* binop = new Binop(operation, call, expr);
+
+    // Finally, return that.
+    ReturnExpression* return_expr = new ReturnExpression(binop);
+
+    $$ = new WasmAssertEq(return_expr);
+  }
+
+ASSERT_TRAP:
+  '('
+  ASSERT_TRAP_TOKEN
+    '(' INVOKE_TOKEN STRING EXPRESSIONS ')' STRING
+  ')' {
+    // Trap is a bit more complex: call the wrapper that we have to ensure it "traps".
+    //  We want to do:
+    //    Call the trapping call.
+    //    Return the pointer to the string (should not be reached).
+    char* error_msg = $8;
+    char* name = $5;
+    std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
+
+    Variable* var = new Variable(name);
+
+    std::list<Expression*>* list = new std::list<Expression*>();
+
+    // Create the call that will trap.
+    CallExpression* call = new CallExpression(var, params);
+
+    list->push_back(call);
+
+    // Create a string expression and push the return of it.
+    StringExpression* string_expr = new StringExpression(error_msg);
+    ReturnExpression* return_expr = new ReturnExpression(string_expr);
+
+    list->push_back(return_expr);
+
+    BlockExpression* block = new BlockExpression(list);
+
+    // And create the trap with memory of the message.
+    $$ = new WasmAssertTrap(block);
+  }
+%%
+
+int yyerror (const std::string& s) {
+  BISON_PRINT("Error here: %s\n", s.c_str());
+  return 0;
+}
+
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <filename> " << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  BISON_PRINT("Parsing %s\n", argv[1]);
+
+  freopen(argv[1], "r", stdin);
+  yyparse();
+
+  BISON_PRINT("Done Parsing %s\n", argv[1]);
+  return EXIT_SUCCESS;
+}
