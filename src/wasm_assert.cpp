@@ -16,7 +16,7 @@
 #include "wasm_assert.h"
 #include "wasm_file.h"
 
-void WasmAssertEq::Codegen(WasmFile* file) {
+void WasmAssertReturn::Codegen(WasmFile* file) {
   // Now generate this function prototype: assert_eq is always the same:
     // Returns a boolean (is the invoke result equal to the expected one.
 

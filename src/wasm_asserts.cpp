@@ -48,7 +48,7 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
 
     // Depending on the type of the assert type, we either call it directly
     //   or go via a handler and pass the wasm_assert method.
-    if (dynamic_cast<WasmAssertEq*>(elem) != nullptr) {
+    if (dynamic_cast<WasmAssertReturn*>(elem) != nullptr) {
       // Generate the call.
       Variable* id = new Variable(name.c_str());
       call = new CallExpression(id);

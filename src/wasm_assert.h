@@ -68,9 +68,9 @@ class WasmAssert {
     }
 };
 
-class WasmAssertEq : public WasmAssert {
+class WasmAssertReturn : public WasmAssert {
   public:
-    WasmAssertEq(Expression* expr) : WasmAssert(expr) {
+    WasmAssertReturn(Expression* expr) : WasmAssert(expr) {
     }
 
     virtual void Codegen(WasmFile* file);

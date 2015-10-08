@@ -223,9 +223,9 @@ call {
   return CALL_TOKEN;
 }
 
-assert_eq {
-  LEX_DEBUG_PRINT("ASSERT EQ\n");
-  return ASSERT_EQ_TOKEN;
+assert_return {
+  LEX_DEBUG_PRINT("ASSERT RETURN\n");
+  return ASSERT_RETURN_TOKEN;
 }
 
 assert_trap {

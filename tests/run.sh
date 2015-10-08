@@ -2,7 +2,7 @@
 
 echo "Running tests"
 
-list=`ls tests/*wasm`
+list=`ls tests/*wast`
 echo "Test list is:"
 echo $list
 

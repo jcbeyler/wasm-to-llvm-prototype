@@ -87,7 +87,7 @@ extern int yylex (void);
 %token TYPE
 %token NEQ EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %token LE LT GE GT
-%token ASSERT_EQ_TOKEN
+%token ASSERT_RETURN_TOKEN
 %token ASSERT_TRAP_TOKEN
 %token INVOKE_TOKEN
 %token CALL_TOKEN
@@ -117,7 +117,7 @@ extern int yylex (void);
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
-%type<wa> ASSERT ASSERT_TRAP ASSERT_EQ
+%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN
 %type<was> ASSERTS
 
 %%
@@ -464,16 +464,16 @@ ASSERTS:
   }
 
 ASSERT:
-  ASSERT_EQ {
+  ASSERT_RETURN {
     $$ = $1;
   } |
   ASSERT_TRAP {
     $$ = $1;
   }
 
-ASSERT_EQ:
+ASSERT_RETURN:
   '('
-  ASSERT_EQ_TOKEN
+  ASSERT_RETURN_TOKEN
     '(' INVOKE_TOKEN STRING EXPRESSIONS ')'
     EXPRESSIONS
   ')' {
@@ -504,7 +504,7 @@ ASSERT_EQ:
     // Finally, return that.
     ReturnExpression* return_expr = new ReturnExpression(binop);
 
-    $$ = new WasmAssertEq(return_expr);
+    $$ = new WasmAssertReturn(return_expr);
   }
 
 ASSERT_TRAP:
