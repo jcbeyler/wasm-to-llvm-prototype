@@ -252,6 +252,9 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
   //   we need to explicitly put 0 here.
   // Also, we interpret the rv value as unsigned, but let's be honest:
   //   if it is negative, that means it's huge, and just set to 0.
+  // Therefore, the solution that is the simplest is to just test if it is above the width:
+  //    If it is negative, since we consider unsigned, it will be bigger than 32 or 64
+  //    Otherwise we need to handle it.
   ETYPE type = operation_->GetType();
   int left_width = (type == INT_32) ? 32 : 64;
 
@@ -262,9 +265,7 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
   if (!sign) {
     // In the case of unsigned, we do:
     /*
-     *  if (amount < 0)
-     *   0
-     *  else 
+     *   // Testing unsigned too big or negative in one step.
      *   if (amount >= value's width)
      *    0
      *   else
@@ -274,7 +275,7 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     ValueHolder* vh = new ValueHolder(left_width);
     Const* width = new Const(type, vh);
 
-    Operation* op = new Operation(GE_OPER, true, type);
+    Operation* op = new Operation(GE_OPER, false, type);
     Binop* cond = new Binop(op, right_, width);
 
     vh = new ValueHolder(left_width - 1);
@@ -288,45 +289,20 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
 
     IfExpression* width_check = new IfExpression(cond, zero, rsr);
 
-    // Now do first if.
-    // Regenerate 0, let's not worry about this so that clean-up (when we do it) is easier.
-    vh = new ValueHolder(0);
-    zero = new Const(type, vh);
-
-    op = new Operation(LT_OPER, true, type);
-    cond = new Binop(op, right_, zero);
-
-    // Regenerate width - 1, let's not worry about this so that clean-up (when we do it) is easier.
-    vh = new ValueHolder(left_width - 1);
-    width_minus_one = new Const(type, vh);
-
-    // Regenerate 0, let's not worry about this so that clean-up (when we do it) is easier.
-    vh = new ValueHolder(0);
-    zero = new Const(type, vh);
-
-    // Now generate the first if.
-    IfExpression* first_if = new IfExpression(cond, zero, width_check);
-
     // Now generate the code.
-    first_if->Codegen(fct, builder);
+    width_check->Codegen(fct, builder);
   } else {
     /*
-     * if signed, we want to do:
-     *  if (amount < 0)
-     *    shr value, 31
-     *    shr value, 1
-     *  else 
+     *  // Testing unsigned too big or negative in one step.
      *   if (amount >= value's width)
      *    shr value, 31
-     *    shr value, 1
      *   else
      *    really do the shift
      */
-    // TODO handle 64.
     ValueHolder* vh = new ValueHolder(left_width);
     Const* width = new Const(type, vh);
 
-    Operation* op = new Operation(GE_OPER, true, type);
+    Operation* op = new Operation(GE_OPER, false, type);
     Binop* cond = new Binop(op, right_, width);
 
     vh = new ValueHolder(left_width - 1);
@@ -341,26 +317,8 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     // False path here goes back to the real shift here.
     IfExpression* width_check = new IfExpression(cond, rsr, original_rsr);
 
-    // Now do first if.
-    // Generate 0
-    vh = new ValueHolder(0);
-    Const* zero = new Const(type, vh);
-
-    op = new Operation(LT_OPER, true, type);
-    cond = new Binop(op, right_, zero);
-
-    // Regenerate width - 1, let's not worry about this so that clean-up (when we do it) is easier.
-    vh = new ValueHolder(left_width - 1);
-    width_minus_one = new Const(type, vh);
-
-    // Now generate the first if.
-    rsr = new ReallyShift(left_, width_minus_one, true, true);
-
-    // Generate first if: if true, do the two shift-rights, otherwise do the width check.
-    IfExpression* first_if = new IfExpression(cond, rsr, width_check);
-
     // Now generate the code.
-    first_if->Codegen(fct, builder);
+    width_check->Codegen(fct, builder);
   }
 }
 
