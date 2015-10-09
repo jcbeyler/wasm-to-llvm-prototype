@@ -544,7 +544,7 @@ ASSERT_RETURN:
     Expression* expr = results->back();
 
     // Create the eq operation.
-    Operation* operation = new Operation(EQ_OPER);
+    Operation* operation = new Operation(EQ_OPER, false);
 
     // Create the binop.
     Binop* binop = new Binop(operation, call, expr);

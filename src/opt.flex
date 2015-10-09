@@ -19,6 +19,8 @@
 #include "enums.h"
 #include "opt.tab.hpp"
 
+#include <cassert>
+
 #define LEX_DEBUG_PRINT(...) \
     DEBUG_PRINT(LEX_GROUP, LEX_VERBOSITY, __VA_ARGS__)
 
@@ -361,19 +363,38 @@ i64 {
 
 [-+]{0,1}0x[01][\.]{0,1}{HEX_DIGIT}*p[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Hexa float %s\n", yytext);
-  yylval.d = strtod(yytext, nullptr);
+  char* end = nullptr;
+  yylval.d = strtod(yytext, &end);
+  assert(end != nullptr && *end == '\0');
   return FLOAT;
 }
 
 [-+]{0,1}infinity {
   LEX_DEBUG_PRINT("Infinity: %s\n", yytext);
-  yylval.d = strtod(yytext, nullptr);
+  char* end = nullptr;
+  yylval.d = strtod(yytext, &end);
+  assert(end != nullptr && *end == '\0');
+  return FLOAT;
+}
+
+[-+]{0,1}nan\(0x{HEX_DIGIT}+\) {
+  // Start by getting the nan out of the way.
+  char* ptr = yytext + 4;
+  char* end = nullptr;
+  yylval.d = strtod(yytext, &end);
+  assert(end != nullptr && (*end == ')' || *end == '\0'));
+
+  // Nan is a bit special: strtod seems to not take the sign well.
+  if (yytext[0] == '-') {
+    yylval.d *= -1;
+  }
+
   return FLOAT;
 }
 
 [-+]{0,1}nan {
   LEX_DEBUG_PRINT("Nan: %s\n", yytext);
-  // Nan is a bit specail: strtod seems to not take the sign well.
+  // Nan is a bit special: strtod seems to not take the sign well.
   yylval.d = strtod("nan", nullptr);
 
   if (yytext[0] == '-') {
@@ -384,7 +405,9 @@ i64 {
 
 [-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Integer %s\n", yytext);
-  yylval.l = strtoll(yytext, nullptr, 0);
+  char* end = nullptr;
+  yylval.l = strtoll(yytext, &end, 0);
+  assert(end != nullptr && *end == '\0');
   return INTEGER;
 }
 
@@ -399,13 +422,17 @@ i64 {
 
 [-+]{0,1}{DIGIT}{DIGIT}*"."{DIGIT}*[e]{0,1}[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Float %s\n", yytext);
-  yylval.d = strtod(yytext, nullptr);
+  char* end = nullptr;
+  yylval.d = strtod(yytext, &end);
+  assert(end != nullptr && *end == '\0');
   return FLOAT;
 }
 
 [-+]{0,1}{DIGIT}{DIGIT}*[e]{0,1}[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Float %s\n", yytext);
-  yylval.d = strtod(yytext, nullptr);
+  char* end = nullptr;
+  yylval.d = strtod(yytext, &end);
+  assert(end != nullptr && *end == '\0');
   return FLOAT;
 }
 
@@ -423,6 +450,8 @@ ${ID} {
 }
 
 \n {
+  static int cnt = 0;
+  LEX_DEBUG_PRINT("Handled line %d\n", cnt++);
 }
 
 " " {
