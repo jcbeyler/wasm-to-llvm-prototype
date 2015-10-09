@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <limits>
 
 #include "debug.h"
 #include "enums.h"
@@ -311,6 +312,7 @@ POTENTIAL_SIGNED_BINOP:
 BINOP:
     TYPE '.' POTENTIAL_SIGNED_BINOP {
       Operation* op = $3;
+
       ETYPE type = $1;
       op->SetType(type);
       $$ = op;
@@ -493,7 +495,31 @@ ASSERT_RETURN_NAN:
   '('
   ASSERT_RETURN_NAN_TOKEN
     '(' INVOKE_TOKEN STRING EXPRESSIONS ')' ')' {
-      $$ = nullptr;
+      char* name = $5;
+      std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
+
+      Variable* var = new Variable(name);
+
+      // Create the call.
+      CallExpression* call = new CallExpression(var, params);
+
+      // Create the eq operation.
+      Operation* operation = new Operation(EQ_OPER, false, VOID);
+
+      // TODO: we need to be able to get the return of the function.
+      ValueHolder* vh = new ValueHolder(std::numeric_limits<float>::quiet_NaN());
+
+      // TODO: This should be 64-bit potentially.
+      Const* expr = new Const(FLOAT_32, vh);
+
+      // Create the binop.
+      Binop* binop = new Binop(operation, call, expr);
+
+      // Finally, return that.
+      ReturnExpression* return_expr = new ReturnExpression(binop);
+
+      // We can just be a wasm assert return to be honest...
+      $$ = new WasmAssertReturn(return_expr);
     }
 
 ASSERT_RETURN:
@@ -519,9 +545,7 @@ ASSERT_RETURN:
     Expression* expr = results->back();
 
     // Create the eq operation.
-    //   VOID type let's the code generator choose later.
-    ETYPE type = VOID;
-    Operation* operation = new Operation(EQ_OPER, type);
+    Operation* operation = new Operation(EQ_OPER);
 
     // Create the binop.
     Binop* binop = new Binop(operation, call, expr);

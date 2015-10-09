@@ -138,7 +138,7 @@ ETYPE Binop::HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt) {
 
 llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder) {
   OPERATION op = operation_->GetOperation();
-  bool is_signed = operation_->GetSigned();
+  bool is_signed = operation_->GetSignedOrOrdered();
 
   // TODO: supposing we are in 64 bit, I'm not yet playing with 32-bit here.
   switch (op) {
@@ -289,7 +289,7 @@ class ReallyShift : public Binop {
         operation_->SetType(type);
       }
 
-      bool is_signed = operation_->GetSigned();
+      bool is_signed = operation_->GetSignedOrOrdered();
 
       if (is_right_shift_) {
         if (!is_signed) {
@@ -488,7 +488,7 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
       //   WASM and LLVM decisions on shift count handling.
         bool right = (op == SHR_OPER);
         // Right shift is the only one that can be signed.
-        bool sign = (right == true && operation_->GetSigned());
+        bool sign = (right == true && operation_->GetSignedOrOrdered());
         return HandleShift(fct, builder, sign, right);
     }
 
@@ -499,7 +499,7 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         //   WASM and LLVM decisions on shift count handling.
         bool div = (op == DIV_OPER);
         // Right shift is the only one that can be signed.
-        bool sign = operation_->GetSigned();
+        bool sign = operation_->GetSignedOrOrdered();
         return HandleDivRem(fct, builder, sign, div);
       }
       break;
@@ -535,19 +535,44 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   }
 
   if (type == FLOAT_32 || type == FLOAT_64) {
+    bool ordered = operation_->GetSignedOrOrdered();
     switch (op) {
       case LT_OPER:
-        return builder.CreateFCmpOLT(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpOLT(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpULT(lv, rv, "cmptmp");
+        }
       case GT_OPER:
-        return builder.CreateFCmpOGT(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpOGT(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpUGT(lv, rv, "cmptmp");
+        }
       case LE_OPER:
-        return builder.CreateFCmpOLE(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpOLE(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpULE(lv, rv, "cmptmp");
+        }
       case GE_OPER:
-        return builder.CreateFCmpOGE(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpOGE(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpUGE(lv, rv, "cmptmp");
+        }
       case NE_OPER:
-        return builder.CreateFCmpUNE(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpONE(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpUNE(lv, rv, "cmptmp");
+        }
       case EQ_OPER:
-        return builder.CreateFCmpOEQ(lv, rv, "cmptmp");
+        if (ordered) {
+          return builder.CreateFCmpOEQ(lv, rv, "cmptmp");
+        } else {
+          return builder.CreateFCmpUEQ(lv, rv, "cmptmp");
+        }
       case DIV_OPER:
         return builder.CreateFDiv(lv, rv, "divtmp");
       case ADD_OPER:

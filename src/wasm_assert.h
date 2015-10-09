@@ -45,7 +45,11 @@ class WasmAssert {
       // Asserts really don't have names but we will want one to call these.
       static int cnt = 0;
       std::ostringstream oss;
-      oss << "wasm_assert_" << cnt;
+      oss << "wasm_assert_";
+
+      // Finally, add the counter.
+      oss << cnt;
+
       cnt++;
 
       name_ = oss.str();

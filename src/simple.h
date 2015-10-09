@@ -69,10 +69,20 @@ class Operation {
   protected:
     OPERATION op_;
     ETYPE type_;
-    bool signed_;
+    bool sign_or_order_;
 
   public:
-    Operation(OPERATION o, bool sign = true, ETYPE t = VOID) : op_(o), signed_(sign), type_(t) {
+    Operation(OPERATION o, bool sign_or_order, ETYPE t) : op_(o), sign_or_order_(sign_or_order), type_(t) {
+    }
+
+    Operation(OPERATION o, bool sign_or_order) : op_(o), sign_or_order_(sign_or_order), type_(VOID) {
+    }
+
+    Operation(OPERATION o) : op_(o), sign_or_order_(true), type_(VOID) {
+      // Special case for the NE operation: by default it is unordered.
+      if (o == NE_OPER) {
+        sign_or_order_ = false;
+      }
     }
 
     OPERATION GetOperation() const {
@@ -83,8 +93,12 @@ class Operation {
       return type_;
     }
 
-    bool GetSigned() const {
-      return signed_;
+    bool GetSignedOrOrdered() const {
+      return sign_or_order_;
+    }
+
+    void SetSignedOrOrdered(bool b) {
+      sign_or_order_ = b;
     }
 
     void SetType(ETYPE type) {
