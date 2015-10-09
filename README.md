@@ -24,6 +24,7 @@ The prototype does not do:
 
 * There are some limitations in type checking and handling on the LLVM side, consider it a feature
 * Assert traps are not yet supported (I tried but got side-tracked, it's a WIP)
+** It currently just signals that traps are not supported...
 * Probably a lot more things
 
 Things that I know we need to improve:
@@ -59,7 +60,7 @@ You'll get an executable named llvm_wasm.
 
 ## Synopsis
 
-You can call the executable with
+You can call the executable with:
 
 ```
 llvm_wasm <wasm filename>
@@ -80,7 +81,6 @@ The implementation consists of the following folders:
 * *obj*: the built objects
 
 * tests*: test folder with copies of the spec test files that are supported, meaning that the compiler does generate llvm code for them.
-
 
 The code itself is divided in:
 
