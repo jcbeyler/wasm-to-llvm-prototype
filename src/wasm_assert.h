@@ -80,6 +80,14 @@ class WasmAssertReturn : public WasmAssert {
     virtual void Codegen(WasmFile* file);
 };
 
+class WasmAssertReturnNan : public WasmAssertReturn {
+  public:
+    WasmAssertReturnNan(Expression* expr) : WasmAssertReturn(expr) {
+    }
+
+    virtual void Codegen(WasmFile* file);
+};
+
 class WasmAssertTrap : public WasmAssert {
   protected:
     std::string error_msg_;

@@ -102,6 +102,22 @@ class Binop : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
+    Expression* GetRight() const {
+      return right_;
+    }
+
+    Expression* GetLeft() const {
+      return left_;
+    }
+
+    Expression* SetRight(Expression* r) {
+      right_ = r;
+    }
+
+    Expression* SetLeft(Expression* l) {
+      left_ = l;
+    }
+
     virtual void Dump(int tabs) const {
       BISON_TABBED_PRINT(tabs, "(");
 
@@ -243,6 +259,10 @@ class CallExpression : public Expression {
       call_id_(id), params_(nullptr) {
     }
 
+    Variable* GetVariable() const {
+      return call_id_;
+    }
+
     llvm::Function* GetCallee(WasmFunction* fct) const;
 
     virtual void Dump(int tabs) const {
@@ -281,6 +301,10 @@ class ReturnExpression : public Expression {
         result_->Dump(0);
       }
       BISON_PRINT(")");
+    }
+
+    Expression* GetResult() const {
+      return result_;
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);

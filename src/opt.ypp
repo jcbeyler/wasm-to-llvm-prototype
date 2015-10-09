@@ -506,10 +506,9 @@ ASSERT_RETURN_NAN:
       // Create the eq operation.
       Operation* operation = new Operation(EQ_OPER, false, VOID);
 
-      // TODO: we need to be able to get the return of the function.
+      // So suppose it is floating point and we will fix this later.
       ValueHolder* vh = new ValueHolder(std::numeric_limits<float>::quiet_NaN());
 
-      // TODO: This should be 64-bit potentially.
       Const* expr = new Const(FLOAT_32, vh);
 
       // Create the binop.
@@ -519,7 +518,7 @@ ASSERT_RETURN_NAN:
       ReturnExpression* return_expr = new ReturnExpression(binop);
 
       // We can just be a wasm assert return to be honest...
-      $$ = new WasmAssertReturn(return_expr);
+      $$ = new WasmAssertReturnNan(return_expr);
     }
 
 ASSERT_RETURN:
