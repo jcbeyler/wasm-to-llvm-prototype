@@ -8,7 +8,7 @@ GENERATED = obj/lex.yy.c obj/opt.tab.cpp
 GENERATED_OBJ = obj/lex.yy.o obj/opt.tab.o
 SRC_OBJ = $(patsubst src/%.cpp, obj/%.o, $(wildcard src/*.cpp))
 
-FILES = ${HEADERS} ${SRC_OBJ} ${GENERATED} 
+FILES = ${HEADERS} ${SRC_OBJ} ${GENERATED}
 OBJS = $(SRC_OBJ) $(GENERATED_OBJ)
 
 CFLAGS = -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++0x -Isrc

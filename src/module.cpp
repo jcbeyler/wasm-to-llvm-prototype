@@ -21,6 +21,7 @@
 #include "function.h"
 #include "module.h"
 #include "wasm_file.h"
+#include "utility.h"
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Intrinsics.h"
@@ -29,11 +30,7 @@ llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE
   std::vector<Type*> args;
 
   // For the moment they are all using just integers are their arguments.
-  if (type == INT_32) {
-    args.push_back(llvm::Type::getInt32Ty(llvm::getGlobalContext()));
-  } else {
-    args.push_back(llvm::Type::getInt64Ty(llvm::getGlobalContext()));
-  }
+  args.push_back(ConvertType(type));
 
   llvm::Function* fct = llvm::Intrinsic::getDeclaration(module_, name, args);
 
@@ -54,7 +51,7 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
 
     std::vector<Type*> fct_args;
     llvm::FunctionType* fct_type = llvm::FunctionType::get(ptr_type, fct_args, false);
-     
+
     llvm::PointerType* ptr_to_fct = PointerType::get(fct_type, 0);
     params.push_back(ptr_to_fct);
 

@@ -18,7 +18,7 @@ for f in $list; do
 
   # Build the llvm IR
   $exe $f 2> obj/test.ll
- 
+
   # Create the .s
   llc-3.7 obj/test.ll
 

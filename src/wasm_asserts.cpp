@@ -75,7 +75,7 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
     // In the assert_eq case, we want to compare this to 1.
     Const* one = new Const(INT_32,
         new ValueHolder(1));
-    Operation* op = new Operation(NEQ_OPER, INT_32);
+    Operation* op = new Operation(NE_OPER, INT_32);
     Binop* cmp = new Binop(op, call, one);
 
     // Now we can generate the return 0;

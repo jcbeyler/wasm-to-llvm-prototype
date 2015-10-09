@@ -41,7 +41,7 @@ const char* DumpOperation(OPERATION op) {
   switch (op) {
     case EQ_OPER:
       return "eq";
-    case NEQ_OPER:
+    case NE_OPER:
       return "ne";
     case LE_OPER:
       return "le";
@@ -75,6 +75,26 @@ const char* DumpOperation(OPERATION op) {
       return "clz";
     case POPCNT_OPER:
       return "popcnt";
+    case NEG_OPER:
+      return "neg";
+    case ABS_OPER:
+      return "abs";
+    case CEIL_OPER:
+      return "ceil";
+    case FLOOR_OPER:
+      return "floor";
+    case MIN_OPER:
+      return "min";
+    case MAX_OPER:
+      return "max";
+    case SQRT_OPER:
+      return "sqrt";
+    case TRUNC_OPER:
+      return "trunc";
+    case NEAREST_OPER:
+      return "nearest";
+    case COPYSIGN_OPER:
+      return "copysign";
   }
 
   return "Unknown";

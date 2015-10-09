@@ -64,9 +64,9 @@ ge {
 }
 
 ne {
-  LEX_DEBUG_PRINT("NEQ\n");
-  yylval.l = NEQ_OPER;
-  return NEQ;
+  LEX_DEBUG_PRINT("NE\n");
+  yylval.l = NE_OPER;
+  return NE;
 }
 
 eq {
@@ -158,6 +158,66 @@ popcnt {
   return POPCNT;
 }
 
+sqrt {
+  LEX_DEBUG_PRINT("SQRT\n");
+  yylval.l = SQRT_OPER;
+  return SQRT;
+}
+
+max {
+  LEX_DEBUG_PRINT("MAX\n");
+  yylval.l = MAX_OPER;
+  return MAX;
+}
+
+min {
+  LEX_DEBUG_PRINT("MIN\n");
+  yylval.l = MIN_OPER;
+  return MIN;
+}
+
+ceil {
+  LEX_DEBUG_PRINT("CEIL\n");
+  yylval.l = CEIL_OPER;
+  return CEIL;
+}
+
+floor {
+  LEX_DEBUG_PRINT("FLOOR\n");
+  yylval.l = FLOOR_OPER;
+  return FLOOR;
+}
+
+trunc {
+  LEX_DEBUG_PRINT("TRUNC\n");
+  yylval.l = TRUNC_OPER;
+  return TRUNC;
+}
+
+nearest {
+  LEX_DEBUG_PRINT("NEAREST\n");
+  yylval.l = NEAREST_OPER;
+  return NEAREST;
+}
+
+abs {
+  LEX_DEBUG_PRINT("ABS\n");
+  yylval.l = ABS_OPER;
+  return ABS;
+}
+
+neg {
+  LEX_DEBUG_PRINT("NEG\n");
+  yylval.l = NEG_OPER;
+  return NEG;
+}
+
+copysign {
+  LEX_DEBUG_PRINT("COPYSIGN\n");
+  yylval.l = COPYSIGN_OPER;
+  return COPYSIGN;
+}
+
 nop {
   LEX_DEBUG_PRINT("NOP\n");
   return NOP;
@@ -228,6 +288,11 @@ assert_return {
   return ASSERT_RETURN_TOKEN;
 }
 
+assert_return_nan {
+  LEX_DEBUG_PRINT("ASSERT RETURN NAN\n");
+  return ASSERT_RETURN_NAN_TOKEN;
+}
+
 assert_trap {
   LEX_DEBUG_PRINT("ASSERT TRAP\n");
   return ASSERT_TRAP_TOKEN;
@@ -263,12 +328,59 @@ param {
   return PARAM_TOKEN;
 }
 
+
+f32 {
+  LEX_DEBUG_PRINT("Type %s\n", yytext);
+  yylval.l = FLOAT_32;
+  return TYPE;
+}
+
+f64 {
+  LEX_DEBUG_PRINT("Type %s\n", yytext);
+  yylval.l = FLOAT_64;
+  return TYPE;
+}
+
+i32 {
+  LEX_DEBUG_PRINT("Type %s\n", yytext);
+  yylval.l = INT_32;
+  return TYPE;
+}
+
+i64 {
+  LEX_DEBUG_PRINT("Type %s\n", yytext);
+  yylval.l = INT_64;
+  return TYPE;
+}
+
 [-+]{0,1}0x{HEX_DIGIT}+ {
   LEX_DEBUG_PRINT("Integer %s\n", yytext);
   yylval.l = strtoull(yytext, nullptr, 16);
   return INTEGER;
 }
 
+[-+]{0,1}0x[01][\.]{0,1}{HEX_DIGIT}*p[-+]{0,1}{DIGIT}+ {
+  LEX_DEBUG_PRINT("Hexa float %s\n", yytext);
+  yylval.d = strtod(yytext, nullptr);
+  return FLOAT;
+}
+
+[-+]{0,1}infinity {
+  LEX_DEBUG_PRINT("Infinity: %s\n", yytext);
+  yylval.d = strtod(yytext, nullptr);
+  return FLOAT;
+}
+
+[-+]{0,1}nan {
+  LEX_DEBUG_PRINT("Nan: %s\n", yytext);
+  // Nan is a bit specail: strtod seems to not take the sign well.
+  yylval.d = strtod("nan", nullptr);
+
+  if (yytext[0] == '-') {
+    yylval.d *= -1;
+  }
+  return FLOAT;
+}
 
 [-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Integer %s\n", yytext);
@@ -308,30 +420,6 @@ ${ID} {
   yylval.string = strdup(yytext);
   RemoveDashes(yylval.string);
   return IDENTIFIER;
-}
-
-f32 {
-  LEX_DEBUG_PRINT("Type %s\n", yytext);
-  yylval.l = FLOAT_32;
-  return TYPE;
-}
-
-f64 {
-  LEX_DEBUG_PRINT("Type %s\n", yytext);
-  yylval.l = FLOAT_64;
-  return TYPE;
-}
-
-i32 {
-  LEX_DEBUG_PRINT("Type %s\n", yytext);
-  yylval.l = INT_32;
-  return TYPE;
-}
-
-i64 {
-  LEX_DEBUG_PRINT("Type %s\n", yytext);
-  yylval.l = INT_64;
-  return TYPE;
 }
 
 \n {

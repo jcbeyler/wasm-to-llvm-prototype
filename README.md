@@ -6,7 +6,7 @@ The Spec implementation is the reference for semantical questions. Here, we are 
 
 Currently, it can
 
-* *parse* a few of the spec test cases (supporting for now the float32.wasm, i32.wasm, i64.wasm, hexnum.wasm, and fac.wasm files) 
+* *parse* a few of the spec test cases (supporting for now the float32.wasm, i32.wasm, i64.wasm, hexnum.wasm, and fac.wasm files)
 * *generate* LLVM IR and dumps it for each module file
 * *generate* the assertion opcodes to validate the LLVM IR
 * *generate* a single *execute_asserts* method that calls each assert, allowing easy testing with a very simple driver

@@ -207,7 +207,6 @@ void WasmFunction::Generate(WasmModule* module) {
 
   for (auto iter : ast_) {
     Expression* exp = iter;
-    exp->Dump(0);
     last = exp->Codegen(this, builder);
     is_last_return = (dynamic_cast<ReturnExpression*>(exp) != nullptr);
   }

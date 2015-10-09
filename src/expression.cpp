@@ -26,44 +26,101 @@
 using namespace llvm;
 
 llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  llvm::Function* intrinsic_fct = nullptr;
-  WasmModule* wasm_module = fct->GetModule();
-  llvm::Module* module = wasm_module->GetModule();
+  bool is_intrinsic = false;
   OPERATION op = operation_->GetOperation();
-  ETYPE type = operation_->GetType();
-
-  bool extra_true_arg = false;
 
   switch (op) {
     case CLZ_OPER:
-      intrinsic_fct = wasm_module->GetOrCreateIntrinsic(llvm::Intrinsic::ctlz, type);
-      // We need to pass true as second argument to produce defined result for zero.
-      extra_true_arg = true;
-      break;
     case CTZ_OPER:
-      intrinsic_fct = wasm_module->GetOrCreateIntrinsic(llvm::Intrinsic::cttz, type);
-      // We need to pass true as second argument to produce defined result for zero.
-      extra_true_arg = true;
-      break;
     case POPCNT_OPER:
-      intrinsic_fct = wasm_module->GetOrCreateIntrinsic(llvm::Intrinsic::ctpop, type);
+    case SQRT_OPER:
+    case ABS_OPER:
+    case CEIL_OPER:
+    case FLOOR_OPER:
+    case TRUNC_OPER:
+    case NEAREST_OPER:
+      is_intrinsic = true;
       break;
     default:
-      assert(0);
-      return nullptr;
+      break;
   }
 
-  assert(intrinsic_fct != nullptr);
+  if (is_intrinsic == true) {
+    WasmModule* wasm_module = fct->GetModule();
+    llvm::Module* module = wasm_module->GetModule();
+    ETYPE type = operation_->GetType();
+    llvm::Intrinsic::ID intrinsic;
 
-  std::vector<Value*> arg;
-  arg.push_back(only_->Codegen(fct, builder));
+    bool extra_true_arg = false;
 
-  if (extra_true_arg) {
-    llvm::Value* val_true = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, 0, false));
-    arg.push_back(val_true);
+    switch (op) {
+      case CLZ_OPER:
+        intrinsic = llvm::Intrinsic::ctlz;
+        // We need to pass true as second argument to produce defined result for zero.
+        extra_true_arg = true;
+        break;
+      case CTZ_OPER:
+        intrinsic = llvm::Intrinsic::cttz;
+        // We need to pass true as second argument to produce defined result for zero.
+        extra_true_arg = true;
+        break;
+      case POPCNT_OPER:
+        intrinsic = llvm::Intrinsic::ctpop;
+        break;
+      case SQRT_OPER:
+        intrinsic = llvm::Intrinsic::sqrt;
+        break;
+      case ABS_OPER:
+        intrinsic = llvm::Intrinsic::fabs;
+        break;
+      case CEIL_OPER:
+        intrinsic = llvm::Intrinsic::ceil;
+        break;
+      case FLOOR_OPER:
+        intrinsic = llvm::Intrinsic::floor;
+        break;
+      case TRUNC_OPER:
+        intrinsic = llvm::Intrinsic::trunc;
+        break;
+      case NEAREST_OPER:
+        intrinsic = llvm::Intrinsic::nearbyint;
+        break;
+      default:
+        assert(0);
+        return nullptr;
+    }
+
+    llvm::Function* intrinsic_fct = wasm_module->GetOrCreateIntrinsic(intrinsic, type);
+    assert(intrinsic_fct != nullptr);
+
+    std::vector<Value*> arg;
+    arg.push_back(only_->Codegen(fct, builder));
+
+    if (extra_true_arg) {
+      llvm::Value* val_true = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, 0, false));
+      arg.push_back(val_true);
+    }
+
+    return builder.CreateCall(intrinsic_fct, arg, "calltmp");
+  } else {
+    llvm::Value* rv = only_->Codegen(fct, builder);
+    ETYPE type = operation_->GetType();
+
+    switch (op) {
+      case NEG_OPER: {
+        llvm::Value* lv;
+        if (type == FLOAT_32) {
+          lv = llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(0.0f));
+        } else {
+          lv = llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(0.0));
+        }
+        return builder.CreateFSub(lv, rv, "subtmp");
+      }
+      default:
+          assert(0);
+          return nullptr;
+    }
   }
-
-  return builder.CreateCall(intrinsic_fct, arg, "calltmp");
 }
 
 ETYPE Binop::HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt) {
@@ -87,7 +144,7 @@ llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuil
   switch (op) {
     case EQ_OPER:
       return builder.CreateICmpEQ(lv, rv, "cmptmp");
-    case NEQ_OPER:
+    case NE_OPER:
       return builder.CreateICmpNE(lv, rv, "cmptmp");
     case LE_OPER:
       if (!is_signed) {
@@ -133,7 +190,7 @@ llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuil
     case XOR_OPER:
       return builder.CreateXor(lv, rv, "xortmp");
     case SHL_OPER:
-    case SHR_OPER: 
+    case SHR_OPER:
     case REM_OPER:
       // We should not arrive here anymore.
       assert(0);
@@ -328,7 +385,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   ETYPE type = operation_->GetType();
 
   ValueHolder* vh;
-  
+
   if (type == INT_32) {
     vh = new ValueHolder((int) 0x80000000);
   } else {
@@ -377,12 +434,45 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
 
   op = new Operation(EQ_OPER, true, type);
   cond = new Binop(op, right_, minus_one);
-  
+
   rdr = new ReallyDivRem(left_, right_, div, sign);
   IfExpression* full_test = new IfExpression(cond, left_test, rdr);
 
   // Now generate code.
   full_test->Codegen(fct, builder);
+}
+
+llvm::Value* Binop::HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  WasmModule* wasm_module = fct->GetModule();
+  llvm::Module* module = wasm_module->GetModule();
+  ETYPE type = operation_->GetType();
+  llvm::Intrinsic::ID intrinsic;
+  OPERATION op = operation_->GetOperation();
+
+  switch (op) {
+    case MIN_OPER:
+      intrinsic = llvm::Intrinsic::minnum;
+      break;
+    case MAX_OPER:
+      intrinsic = llvm::Intrinsic::maxnum;
+      break;
+    case COPYSIGN_OPER:
+      intrinsic = llvm::Intrinsic::copysign;
+      break;
+    default:
+      break;
+  }
+
+  llvm::Function* intrinsic_fct = wasm_module->GetOrCreateIntrinsic(intrinsic, type);
+
+  assert (intrinsic_fct != nullptr);
+
+  // Handle paramters.
+  std::vector<Value*> args;
+  args.push_back(left_->Codegen(fct, builder));
+  args.push_back(right_->Codegen(fct, builder));
+
+  return builder.CreateCall(intrinsic_fct, args, "calltmp");
 }
 
 llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
@@ -395,7 +485,7 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     case SHR_OPER:
     case SHL_OPER: {
       // In case we have a SHR, we have work due to a difference between
-      //   WASM and LLVM decisions on shift count handling. 
+      //   WASM and LLVM decisions on shift count handling.
         bool right = (op == SHR_OPER);
         // Right shift is the only one that can be signed.
         bool sign = (right == true && operation_->GetSigned());
@@ -406,13 +496,19 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     case DIV_OPER: {
       if (type == INT_32 || type == INT_64) {
         // In case we have a SHR, we have work due to a difference between
-        //   WASM and LLVM decisions on shift count handling. 
+        //   WASM and LLVM decisions on shift count handling.
         bool div = (op == DIV_OPER);
         // Right shift is the only one that can be signed.
         bool sign = operation_->GetSigned();
         return HandleDivRem(fct, builder, sign, div);
       }
+      break;
     }
+    case MAX_OPER:
+    case MIN_OPER:
+    case COPYSIGN_OPER:
+      // Handle binop intrinsic.
+      return HandleIntrinsic(fct, builder);
     default:
       break;
   }
@@ -440,8 +536,18 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 
   if (type == FLOAT_32 || type == FLOAT_64) {
     switch (op) {
+      case LT_OPER:
+        return builder.CreateFCmpOLT(lv, rv, "cmptmp");
+      case GT_OPER:
+        return builder.CreateFCmpOGT(lv, rv, "cmptmp");
+      case LE_OPER:
+        return builder.CreateFCmpOLE(lv, rv, "cmptmp");
+      case GE_OPER:
+        return builder.CreateFCmpOGE(lv, rv, "cmptmp");
+      case NE_OPER:
+        return builder.CreateFCmpUNE(lv, rv, "cmptmp");
       case EQ_OPER:
-        return builder.CreateFCmpUEQ(lv, rv, "cmptmp");
+        return builder.CreateFCmpOEQ(lv, rv, "cmptmp");
       case DIV_OPER:
         return builder.CreateFDiv(lv, rv, "divtmp");
       case ADD_OPER:

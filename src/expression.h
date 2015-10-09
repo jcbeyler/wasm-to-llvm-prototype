@@ -93,6 +93,7 @@ class Binop : public Expression {
     llvm::Value* HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder);
     llvm::Value* HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool right);
     llvm::Value* HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool div);
+    llvm::Value* HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
   public:
     Binop(Operation* op, Expression* l, Expression* r) :
@@ -406,7 +407,7 @@ class StringExpression : public Expression {
   public:
     StringExpression(char* s) : s_(s) {
     }
-    
+
     virtual void Dump(int tabs) const {
       BISON_TABBED_PRINT(tabs, "(String Expression %s)", s_);
     }
@@ -423,7 +424,7 @@ class ValueExpression : public Expression {
   public:
     ValueExpression(llvm::Value* value) : value_(value) {
     }
-    
+
     virtual void Dump(int tabs) const {
       BISON_TABBED_PRINT(tabs, "(Value Expression %p)", value_);
     }

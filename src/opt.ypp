@@ -85,10 +85,12 @@ extern int yylex (void);
 %token EXPORT_TOKEN
 %token PARAM_TOKEN
 %token TYPE
-%token NEQ EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
+%token NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
+%token SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
 %token LE LT GE GT
 %token ASSERT_RETURN_TOKEN
 %token ASSERT_TRAP_TOKEN
+%token ASSERT_RETURN_NAN_TOKEN
 %token INVOKE_TOKEN
 %token CALL_TOKEN
 %token LOCAL_TOKEN
@@ -111,13 +113,14 @@ extern int yylex (void);
 %type<m> MODULE MODULE_ELEMS
 %type<o> BINOP UNOP
 %type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP
-%type<op> BINOP_OPER UNOP_OPER 
-%type<op> NEQ EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
+%type<op> BINOP_OPER UNOP_OPER
+%type<op> NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %type<op> LE LT GE GT
+%type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
-%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN
+%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN
 %type<was> ASSERTS
 
 %%
@@ -261,7 +264,7 @@ BINOP_OPER:
   LT { $$ = $1; } |
   GE { $$ = $1; } |
   GT { $$ = $1; } |
-  NEQ { $$ = $1; } |
+  NE { $$ = $1; } |
   EQ { $$ = $1; } |
   DIV { $$ = $1; } |
   ADD { $$ = $1; } |
@@ -272,15 +275,25 @@ BINOP_OPER:
   OR { $$ = $1; } |
   XOR { $$ = $1; } |
   SHL { $$ = $1; } |
-  SHR { $$ = $1; }
+  SHR { $$ = $1; } |
+  MAX  { $$ = $1; } |
+  MIN  { $$ = $1; } |
+  COPYSIGN { $$ = $1; }
 
 UNOP_OPER:
   CLZ { $$ = $1; } |
   CTZ { $$ = $1; } |
-  POPCNT { $$ = $1; }
+  POPCNT { $$ = $1; } |
+  SQRT  { $$ = $1; } |
+  CEIL  { $$ = $1; } |
+  FLOOR  { $$ = $1; } |
+  TRUNC  { $$ = $1; } |
+  NEAREST  { $$ = $1; } |
+  ABS  { $$ = $1; } |
+  NEG  { $$ = $1; }
 
 SIGN:
-  's' { $$ = true; } | 
+  's' { $$ = true; } |
   'u' { $$ = false; }
 
 POTENTIAL_SIGNED_UNOP:
@@ -454,7 +467,9 @@ ASSERTS:
     WasmAsserts* asserts = $2;
     WasmAssert* the_assert = $1;
 
-    asserts->AddAssert(the_assert);
+    if (the_assert != nullptr) {
+      asserts->AddAssert(the_assert);
+    }
 
     // Propagate it up.
     $$ = $2;
@@ -469,7 +484,17 @@ ASSERT:
   } |
   ASSERT_TRAP {
     $$ = $1;
+  } |
+  ASSERT_RETURN_NAN {
+    $$ = $1;
   }
+
+ASSERT_RETURN_NAN:
+  '('
+  ASSERT_RETURN_NAN_TOKEN
+    '(' INVOKE_TOKEN STRING EXPRESSIONS ')' ')' {
+      $$ = nullptr;
+    }
 
 ASSERT_RETURN:
   '('
