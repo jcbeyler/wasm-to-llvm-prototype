@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "enums.h"
 #include "opt.tab.hpp"
+#include "globals.h"
 
 #include <cassert>
 
@@ -450,8 +451,8 @@ ${ID} {
 }
 
 \n {
-  static int cnt = 0;
-  LEX_DEBUG_PRINT("Handled line %d\n", cnt++);
+  LEX_DEBUG_PRINT("Handled line %d\n", g_variables->GetLineCnt());
+  g_variables->IncrementLineCnt();
 }
 
 " " {
