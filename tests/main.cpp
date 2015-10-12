@@ -38,11 +38,12 @@ extern "C" {
 int main(void) {
   int res = -1;
   res = execute_asserts();
-  fprintf(stderr, "Executed asserts: %d\n", res);
 
   if (res == -1) {
     return EXIT_SUCCESS;
+    fprintf(stderr, "Executed assertion, success\n");
   } else {
+    fprintf(stderr, "Executed assertion, failure for assertion line %d\n", res);
     return EXIT_FAILURE;
   }
 }

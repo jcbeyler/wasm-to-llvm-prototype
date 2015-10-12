@@ -521,10 +521,19 @@ ASSERT_RETURN_NAN:
       // Create the binop.
       Binop* binop = new Binop(operation, call, expr);
 
-      // Finally, return that.
-      ReturnExpression* return_expr = new ReturnExpression(binop);
+      // Now get the result ready, it's either -1 for no problem
+      //   or the line number if there is a problem.
+      vh = new ValueHolder(-1);
+      Const* success = new Const(INT_32, vh);
 
-      // We can just be a wasm assert return to be honest...
+      vh = new ValueHolder(g_variables->GetLineCnt());
+      Const* failure = new Const(INT_32, vh);
+
+      IfExpression* if_expr = new IfExpression(binop, success, failure);
+
+      // Finally, return that.
+      ReturnExpression* return_expr = new ReturnExpression(if_expr);
+
       $$ = new WasmAssertReturnNan(return_expr);
     }
 
@@ -556,8 +565,18 @@ ASSERT_RETURN:
     // Create the binop.
     Binop* binop = new Binop(operation, call, expr);
 
+    // Now get the result ready, it's either -1 for no problem
+    //   or the line number if there is a problem.
+    ValueHolder* vh = new ValueHolder(-1);
+    Const* success = new Const(INT_32, vh);
+
+    vh = new ValueHolder(g_variables->GetLineCnt());
+    Const* failure = new Const(INT_32, vh);
+
+    IfExpression* if_expr = new IfExpression(binop, success, failure);
+
     // Finally, return that.
-    ReturnExpression* return_expr = new ReturnExpression(binop);
+    ReturnExpression* return_expr = new ReturnExpression(if_expr);
 
     $$ = new WasmAssertReturn(return_expr);
   }

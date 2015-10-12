@@ -39,6 +39,11 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
   builder.SetInsertPoint(bb);
 
   WasmFunction* wasm_fct = new WasmFunction(nullptr, name, fct, wasm_module, INT_32);
+  const char* result_name = "result";
+  Variable* result = new Variable(result_name);
+  wasm_fct->Allocate(result_name, 
+                         llvm::Type::getInt32Ty(llvm::getGlobalContext()),
+                         builder);
 
   // Now generate our IR and then use our codegen for it.
   int idx = asserts_.size() - 1;
@@ -72,23 +77,23 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
       call = new CallExpression(id, params);
     }
 
-    // In the assert_eq case, we want to compare this to 1.
-    Const* one = new Const(INT_32,
-        new ValueHolder(1));
+    // Set the value in a local.
+    SetLocal* set = new SetLocal(result, call);
+
+    // In the assert_eq case, we want to compare this to -1.
+    Const* minus_one = new Const(INT_32, new ValueHolder(-1));
     Operation* op = new Operation(NE_OPER, INT_32);
-    Binop* cmp = new Binop(op, call, one);
+    Binop* cmp = new Binop(op, set, minus_one);
 
     // Now we can generate the return 0;
-    Const* cst = new Const(INT_32,
-        new ValueHolder(idx));
-    ReturnExpression* return_expr = new ReturnExpression(cst);
+    GetLocal* get = new GetLocal(result);
+    ReturnExpression* return_expr = new ReturnExpression(get);
 
     // Finally, generate the AST for this assert.
     IfExpression* inst = new IfExpression(cmp, return_expr);
 
     // Now we can generate it.
     inst->Codegen(wasm_fct, builder);
-
 
     idx--;
   }

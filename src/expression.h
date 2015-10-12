@@ -214,6 +214,18 @@ class IfExpression : public Expression {
       }
     }
 
+    Expression* GetCondition() const {
+      return cond_;
+    }
+
+    Expression* GetTrue() const {
+      return true_cond_;
+    }
+
+    Expression* GetFalse() const {
+      return false_cond_;
+    }
+
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 
