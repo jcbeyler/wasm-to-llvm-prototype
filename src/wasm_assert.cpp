@@ -21,7 +21,10 @@ void WasmAssertReturnNan::Codegen(WasmFile* file) {
   ReturnExpression* return_expr = dynamic_cast<ReturnExpression*>(expr_);
   assert(return_expr != nullptr);
 
-  Binop* binop = dynamic_cast<Binop*>(return_expr->GetResult());
+  IfExpression* if_expr = dynamic_cast<IfExpression*>(return_expr->GetResult());
+  assert(if_expr!= nullptr);
+
+  Binop* binop = dynamic_cast<Binop*>(if_expr->GetCondition());
   assert(binop != nullptr);
 
   CallExpression* call = dynamic_cast<CallExpression*>(binop->GetLeft());
