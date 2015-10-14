@@ -226,6 +226,11 @@ nop {
   return NOP;
 }
 
+reinterpret {
+  LEX_DEBUG_PRINT("REINTERPRET\n");
+  return REINTERPRET;
+}
+
 block {
   LEX_DEBUG_PRINT("BLOCK\n");
   return BLOCK_TOKEN;
@@ -364,43 +369,24 @@ i64 {
 
 [-+]{0,1}0x[01][\.]{0,1}{HEX_DIGIT}*p[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Hexa float %s\n", yytext);
-  char* end = nullptr;
-  yylval.d = strtod(yytext, &end);
-  assert(end != nullptr && *end == '\0');
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 
 [-+]{0,1}infinity {
   LEX_DEBUG_PRINT("Infinity: %s\n", yytext);
-  char* end = nullptr;
-  yylval.d = strtod(yytext, &end);
-  assert(end != nullptr && *end == '\0');
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 
 [-+]{0,1}nan\(0x{HEX_DIGIT}+\) {
-  // Start by getting the nan out of the way.
-  char* ptr = yytext + 4;
-  char* end = nullptr;
-  yylval.d = strtod(yytext, &end);
-  assert(end != nullptr && (*end == ')' || *end == '\0'));
-
-  // Nan is a bit special: strtod seems to not take the sign well.
-  if (yytext[0] == '-') {
-    yylval.d *= -1;
-  }
-
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 
 [-+]{0,1}nan {
   LEX_DEBUG_PRINT("Nan: %s\n", yytext);
-  // Nan is a bit special: strtod seems to not take the sign well.
-  yylval.d = strtod("nan", nullptr);
-
-  if (yytext[0] == '-') {
-    yylval.d *= -1;
-  }
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 
@@ -423,17 +409,13 @@ i64 {
 
 [-+]{0,1}{DIGIT}{DIGIT}*"."{DIGIT}*[e]{0,1}[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Float %s\n", yytext);
-  char* end = nullptr;
-  yylval.d = strtod(yytext, &end);
-  assert(end != nullptr && *end == '\0');
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 
 [-+]{0,1}{DIGIT}{DIGIT}*[e]{0,1}[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Float %s\n", yytext);
-  char* end = nullptr;
-  yylval.d = strtod(yytext, &end);
-  assert(end != nullptr && *end == '\0');
+  yylval.string = strdup(yytext);
   return FLOAT;
 }
 

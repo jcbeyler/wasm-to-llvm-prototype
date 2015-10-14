@@ -65,97 +65,153 @@ class Variable {
     }
 };
 
-class Operation {
-  protected:
-    OPERATION op_;
-    ETYPE type_;
-    bool sign_or_order_;
-
-  public:
-    Operation(OPERATION o, bool sign_or_order, ETYPE t) : op_(o), sign_or_order_(sign_or_order), type_(t) {
-    }
-
-    Operation(OPERATION o, bool sign_or_order) : op_(o), sign_or_order_(sign_or_order), type_(VOID) {
-    }
-
-    Operation(OPERATION o) : op_(o), sign_or_order_(true), type_(VOID) {
-      // Special case for the NE operation: by default it is unordered.
-      if (o == NE_OPER) {
-        sign_or_order_ = false;
-      }
-    }
-
-    OPERATION GetOperation() const {
-      return op_;
-    }
-
-    ETYPE GetType() const {
-      return type_;
-    }
-
-    bool GetSignedOrOrdered() const {
-      return sign_or_order_;
-    }
-
-    void SetSignedOrOrdered(bool b) {
-      sign_or_order_ = b;
-    }
-
-    void SetType(ETYPE type) {
-      type_ = type;
-    }
-
-    void Dump() {
-      BISON_PRINT("%s.%s", DumpOperation(op_), GetETypeName(type_));
-    }
-};
 
 class ValueHolder {
   public:
   union {
     int64_t i;
+    float f;
     double d;
+    char* s;
   } value_;
-  bool is_double_;
+
+  VH_TYPE type_;
 
   public:
     ValueHolder(double d) {
       value_.d = d;
-      is_double_ = true;
+      type_ = VH_DOUBLE;
+    }
+
+    ValueHolder(float f) {
+      value_.f = f;
+      type_ = VH_FLOAT;
     }
 
     ValueHolder(int64_t i) {
       value_.i = i;
-      is_double_ = false;
+      type_ = VH_INTEGER;
     }
 
     ValueHolder(int i) {
       value_.i = i;
-      is_double_ = false;
+      type_ = VH_INTEGER;
+    }
+
+    ValueHolder(char* s) {
+      value_.s = s;
+      type_ = VH_STRING;
     }
 
     int64_t GetInteger() const {
-      if (is_double_ == true) {
-        int64_t res = value_.d;
-        return res;
+      assert(type_ != VH_STRING);
+      switch (type_) {
+        case VH_DOUBLE: {
+          int64_t res = value_.d;
+          return res;
+        }
+        case VH_FLOAT: {
+          int64_t res = value_.f;
+          return res;
+        }
+        default:
+          break;
       }
       return value_.i;
     }
 
+    float GetFloat() const {
+      // This happens if we had a double from the parser that was actually in integer form.
+      assert(type_ != VH_STRING);
+
+      switch (type_) {
+        case VH_INTEGER: {
+          float res = value_.i;
+          return res;
+        }
+        case VH_DOUBLE: {
+          float res = value_.d;
+          return res;
+        }
+        default:
+          break;
+      }
+      return value_.f;
+    }
+
     double GetDouble() const {
       // This happens if we had a double from the parser that was actually in integer form.
-      if (is_double_ == false) {
-        double res = value_.i;
-        return res;
+      assert(type_ != VH_STRING);
+
+      switch (type_) {
+        case VH_INTEGER: {
+          double res = value_.i;
+          return res;
+        }
+        case VH_FLOAT: {
+          double res = value_.f;
+          return res;
+        }
+        default:
+          break;
       }
       return value_.d;
     }
 
     void Dump() {
-      if (is_double_) {
-        BISON_PRINT("%f", value_.d);
-      } else {
-        BISON_PRINT("%ld", value_.i);
+      switch (type_) {
+        case VH_INTEGER:
+          BISON_PRINT("%ld", value_.i);
+          break;
+        case VH_FLOAT:
+        case VH_DOUBLE:
+          BISON_PRINT("%f (%lx)", value_.d, value_.i);
+          break;
+        case VH_STRING:
+          BISON_PRINT("%s", value_.s);
+          break;
+      }
+    }
+
+    bool Convert(VH_TYPE dest) {
+      // Only convert if we are in type string.
+      if (type_ != VH_STRING) {
+        return false;
+      }
+
+      switch (dest) {
+        case VH_INTEGER:
+          // Should never happen.
+          assert(0);
+          break;
+        case VH_FLOAT: {
+          char* s = value_.s;
+          char* end = nullptr;
+          value_.f = strtof(s, &end);
+          assert(end != nullptr && (*end == ')' || *end == '\0'));
+
+          // Nan is a bit special: strtod seems to not take the sign well.
+          if (strstr(s, "nan") != nullptr && *s == '-') {
+            value_.f *= -1;
+          }
+
+          type_ = VH_FLOAT;
+        }
+        break;
+
+        case VH_DOUBLE: {
+          char* s = value_.s;
+          char* end = nullptr;
+          value_.d = strtod(s, &end);
+          assert(end != nullptr && (*end == ')' || *end == '\0'));
+
+          // Nan is a bit special: strtod seems to not take the sign well.
+          if (strstr(s, "nan") != nullptr && *s == '-') {
+            value_.d *= -1;
+          }
+          type_ = VH_DOUBLE;
+        }
+        break;
       }
     }
 };

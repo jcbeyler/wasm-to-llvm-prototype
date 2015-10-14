@@ -116,9 +116,14 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         }
         return builder.CreateFSub(lv, rv, "subtmp");
       }
+      case REINTERPRET_OPER: {
+        ReinterpretOperation* reinterpret = dynamic_cast<ReinterpretOperation*>(operation_);
+        assert(reinterpret != nullptr);
+        return builder.CreateBitCast(rv, ConvertType(type), "reinterpret");
+      }
       default:
-          assert(0);
-          return nullptr;
+        assert(0);
+        return nullptr;
     }
   }
 }
@@ -625,7 +630,7 @@ llvm::Value* SetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 llvm::Value* Const::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   switch (type_) {
     case FLOAT_32: {
-      float f = value_->GetDouble();
+      float f = value_->GetFloat();
       return llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(f));
     }
     case FLOAT_64:

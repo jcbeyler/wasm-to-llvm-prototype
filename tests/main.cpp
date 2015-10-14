@@ -26,12 +26,12 @@ extern "C" {
   int execute_asserts(void);
 
   // Wrapper around the assert trap.
-  bool assert_trap_handler(char* (*fct)(void)) {
+  int assert_trap_handler(char* (*fct)(void)) {
     int idx = 0;
     char* exception = nullptr;
 
     std::cerr << "Currently the trapping system does not work, ignoring" << std::endl;
-    return true;
+    return -1;
   }
 }
 

@@ -19,6 +19,7 @@
 #include <list>
 
 #include "enums.h"
+#include "operation.h"
 #include "utility.h"
 #include "simple.h"
 
@@ -236,6 +237,16 @@ class Const: public Expression {
 
   public:
     Const(ETYPE t, ValueHolder* v) : type_(t), value_(v) {
+      switch (t) {
+        case FLOAT_32:
+          v->Convert(VH_FLOAT);
+          break;
+        case FLOAT_64:
+          v->Convert(VH_DOUBLE);
+          break;
+        default:
+          break;
+      }
     }
 
     virtual void Dump(int tabs) const {
