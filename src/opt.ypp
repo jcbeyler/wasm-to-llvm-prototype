@@ -29,6 +29,7 @@
 #include "globals.h"
 #include "local.h"
 #include "module.h"
+#include "operation.h"
 #include "simple.h"
 #include "wasm_assert.h"
 #include "wasm_asserts.h"
@@ -83,7 +84,7 @@ std::unique_ptr<Globals> g_variables;
   WasmAsserts* was;
 }
 
-%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL REINTERPRET
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -109,7 +110,7 @@ std::unique_ptr<Globals> g_variables;
 %type<voidptr> EXPRESSIONS
 
 %type<b> SIGN
-%type<d> FLOAT
+%type<string> FLOAT
 %type<e> EXPORT
 %type<et> TYPE
 %type<ex> CALL BREAK BLOCK
@@ -327,9 +328,13 @@ BINOP:
 
 UNOP:
     TYPE '.' POTENTIAL_SIGNED_UNOP {
-      Operation* op= $3;
+      Operation* op = $3;
       ETYPE type = $1;
       op->SetType(type);
+      $$ = op;
+    } |
+    TYPE '.' REINTERPRET '/' TYPE {
+      ReinterpretOperation* op = new ReinterpretOperation($1, $5);
       $$ = op;
     }
 

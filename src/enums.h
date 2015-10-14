@@ -26,6 +26,13 @@ enum ETYPE {
   PTR_64
 };
 
+enum VH_TYPE {
+  VH_INTEGER,
+  VH_FLOAT,
+  VH_DOUBLE,
+  VH_STRING
+};
+
 enum OPERATION {
   EQ_OPER,
   NE_OPER,
@@ -56,6 +63,7 @@ enum OPERATION {
   TRUNC_OPER,
   NEAREST_OPER,
   COPYSIGN_OPER,
+  REINTERPRET_OPER,
 };
 
 #endif
