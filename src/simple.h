@@ -63,6 +63,10 @@ class Variable {
     const char* GetString() const {
       return s_;
     }
+
+    void SetString(char* s) {
+      s_ = s;
+    }
 };
 
 

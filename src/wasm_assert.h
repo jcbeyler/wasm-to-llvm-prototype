@@ -39,6 +39,7 @@ class WasmAssert {
   protected:
     Expression* expr_;
     std::string name_;
+    std::string mangled_name_;
 
   public:
     WasmAssert(Expression* expr) : expr_(expr) {
@@ -53,6 +54,9 @@ class WasmAssert {
       cnt++;
 
       name_ = oss.str();
+
+      mangled_name_ = "wp_";
+      mangled_name_ += name_;
     }
 
     virtual void Codegen(WasmFile* file) {
@@ -68,6 +72,10 @@ class WasmAssert {
     }
 
     const std::string& GetName() const {
+      return name_;
+    }
+
+    const std::string& GetMangledName() const {
       return name_;
     }
 };

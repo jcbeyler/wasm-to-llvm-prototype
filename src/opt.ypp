@@ -46,6 +46,7 @@ std::unique_ptr<Globals> g_variables;
   class Expression;
   enum ETYPE;
   class FunctionField;
+  class Globals;
   class Local;
   class Operation;
   enum OPERATION;
@@ -54,9 +55,9 @@ std::unique_ptr<Globals> g_variables;
   class WasmAssert;
   class WasmAsserts;
   class WasmExport;
+  class WasmFile;
   class WasmFunction;
   class WasmModule;
-  class Globals;
 
 #include <memory>
   extern std::unique_ptr<Globals> g_variables;
@@ -81,7 +82,7 @@ std::unique_ptr<Globals> g_variables;
   Variable* v;
   ValueHolder* vh;
   WasmAssert* wa;
-  WasmAsserts* was;
+  WasmFile* wf;
 }
 
 %token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL REINTERPRET
@@ -130,27 +131,42 @@ std::unique_ptr<Globals> g_variables;
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN
-%type<was> ASSERTS
+%type<wf> FILE
 
 %%
 
-FILE:
-  MODULE
-  ASSERTS {
-    // Currently, we only accept one module and we ignore the asserts.
-    WasmModule* module = $1;
-    WasmAsserts* asserts = $2;
-
-    // Create the file now.
-    WasmFile* file = new WasmFile();
-    file->AddModule(module);
-    file->AddAsserts(asserts);
+START: FILE {
+    WasmFile* file = $1;
 
     // Generate the file code.
     file->Generate();
 
     // Dump for debug.
-    file->Dump();
+    file->Print();
+}
+
+FILE:
+  MODULE FILE {
+    // Add the module to the file.
+    WasmModule* module = $1;
+    WasmFile* file = $2;
+    file->AddModule(module);
+
+    // Propagate this up.
+    $$ = file;
+  } |
+  ASSERT FILE {
+    // Add assertion.
+    WasmAssert* a = $1;
+    WasmFile* file = $2;
+    file->AddAssert(a);
+
+    // Propagate this up.
+    $$ = file;
+  } | {
+    // Create the file now.
+    WasmFile* file = new WasmFile();
+    $$ = file;
   }
 
 MODULE:
@@ -182,8 +198,13 @@ EXPORT: '('
     STRING
     VARIABLE
     ')' {
-      std::string s = $3;
+      // Handle name mangling.
+      std::string s = AddWasmFunctionPrefix($3);
       Variable* var = $4;
+
+      if (var->IsString()) {
+        var->SetString(AddWasmFunctionPrefix(var->GetString()));
+      }
 
       WasmExport* exp = new WasmExport(s, var);
       $$ = exp;
@@ -257,7 +278,9 @@ FUNCTION: '('
     FUNCTION_FIELDS
     ')' {
       WasmFunction* f = nullptr;
-      char* name = $3;
+
+      // Handle name mangling.
+      char* name = AddWasmFunctionPrefix($3);
       std::list<FunctionField*>* fields = static_cast<std::list<FunctionField*>* >($4);
 
       if (name != nullptr) {
@@ -475,22 +498,6 @@ RESULT: RESULT_TOKEN TYPE { $$ = $2; }
  * Ignoring the asserts for now, we really just want to compile the functions
  * but want to be compatible with the example files in the ml-proto project.
  */
-
-ASSERTS:
-  ASSERT ASSERTS {
-    WasmAsserts* asserts = $2;
-    WasmAssert* the_assert = $1;
-
-    if (the_assert != nullptr) {
-      asserts->AddAssert(the_assert);
-    }
-
-    // Propagate it up.
-    $$ = $2;
-  }
-  | {
-    $$ = new WasmAsserts();
-  }
 
 ASSERT:
   ASSERT_RETURN {

@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
+
+#include <sstream>
+
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -128,7 +131,6 @@ llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* dest_type, llvm::IR
 
   // This will move after.
   if (dest_type_id != result_type_id) {
-    fprintf(stderr, "%d - %d\n", dest_type_id, result_type_id);
     assert(0);
     return nullptr;
   } else {
@@ -181,4 +183,11 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
   // Should not get here.
   assert(0);
   return VOID;
+}
+
+char* AddWasmFunctionPrefix(const char* s) {
+  const char* prefix = "wp_";
+  std::ostringstream oss;
+  oss << prefix << s;
+  return strdup(oss.str().c_str());
 }

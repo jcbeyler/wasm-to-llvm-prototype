@@ -19,37 +19,44 @@
 #include "function.h"
 #include "module.h"
 #include "wasm_asserts.h"
+#include "wasm_assert.h"
 
 class WasmFile {
   protected:
-    WasmAsserts* asserts_;
-    WasmModule* module_;
+    WasmAsserts asserts_;
+    std::vector<WasmModule*> modules_;
     WasmModule* assert_module_;
 
   public:
-    WasmFile() : module_(nullptr), asserts_(nullptr), assert_module_(nullptr) {
+    WasmFile() : assert_module_(nullptr) {
     }
 
     void AddModule(WasmModule* module) {
       // Currently we only support one module.
-      assert(module_ == nullptr);
-      module_ = module;
+      modules_.push_back(module);
+      module->SetWasmFile(this);
     }
 
-    void AddAsserts(WasmAsserts* asserts) {
-      // Currently we only support one group of asserts.
-      assert(asserts_ == nullptr);
-      asserts_ = asserts;
+    void AddAssert(WasmAssert* a) {
+      asserts_.AddAssert(a);
+    }
+
+    void Print() {
+      for (auto module : modules_) {
+        module->Print();
+      }
+
+      if (assert_module_ != nullptr) {
+        assert_module_->Print();
+      }
     }
 
     void Dump() {
-      if (module_ != nullptr) {
-        module_->Dump();
+      for (auto module : modules_) {
+        module->Dump();
       }
 
-      if (asserts_ != nullptr) {
-        asserts_->Dump();
-      }
+      asserts_.Dump();
 
       if (assert_module_ != nullptr) {
         assert_module_->Dump();
@@ -57,33 +64,37 @@ class WasmFile {
     }
 
     void Generate() {
-      if (module_ != nullptr) {
-        module_->Generate();
+      for (auto module : modules_) {
+        module->Generate();
       }
 
-      if (asserts_ != nullptr) {
-        asserts_->Generate(this);
-      }
+      asserts_.Generate(this);
     }
 
     WasmFunction* GetWasmFunction(const char* name) {
       // Return function if found.
-      assert(module_ != nullptr);
-      WasmFunction* fct = module_->GetWasmFunction(name, false);
-      return fct;
+      for (auto module : modules_) {
+        WasmFunction* fct = module->GetWasmFunction(name, false);
+
+        if (fct != nullptr) {
+          return fct;
+        }
+      }
+
+      return nullptr;
     }
 
     llvm::Function* GetFunction(const char* name) {
       // Return function if found.
-      assert(module_ != nullptr);
+      for (auto module : modules_) {
+        WasmFunction* fct = module->GetWasmFunction(name, false);
 
-      WasmFunction* fct = module_->GetWasmFunction(name, false);
-
-      if (fct == nullptr) {
-        return nullptr;
+        if (fct != nullptr) {
+          return fct->GetFunction();
+        }
       }
 
-      return fct->GetFunction();
+      return nullptr;
     }
 
     WasmModule* GetAssertModule() {
@@ -93,6 +104,16 @@ class WasmFile {
         assert_module_ = new WasmModule(module, nullptr, this);
       }
       return assert_module_;
+    }
+
+    llvm::Module* GetIntrinsicModule() {
+      if (modules_.size() > 0) {
+        return modules_[0]->GetModule();
+      } else {
+        WasmModule* module = new WasmModule();
+        modules_.push_back(module);
+        return module->GetModule();
+      }
     }
 };
 

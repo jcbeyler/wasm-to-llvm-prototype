@@ -26,9 +26,9 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
-
 
 #include "export.h"
 
@@ -58,9 +58,16 @@ class WasmModule {
     std::map<std::string, WasmFunction*> map_functions_;
     std::vector<WasmFunction*> vector_functions_;
 
+    std::string name_;
+
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
       module_(module), fpm_(fpm), file_(file) {
+        static int cnt = 0;
+        std::ostringstream oss;
+        oss << "wasm_module_" << cnt;
+        cnt++;
+        name_ = oss.str();
     }
 
     void AddFunction(WasmFunction* wf) {
@@ -75,9 +82,23 @@ class WasmModule {
       return module_;
     }
 
+    void SetWasmFile(WasmFile* f) {
+      file_ = f;
+    }
+
     void AddFunctionAndRegister(WasmFunction* wf) {
       AddFunction(wf);
       map_functions_[wf->GetName()] = wf;
+    }
+
+    void Print() {
+      std::error_code ec;
+      llvm::sys::fs::OpenFlags of;
+      std::ostringstream oss;
+      oss << "obj/" << name_ << ".ll";
+      raw_fd_ostream file(oss.str().c_str(), ec, of); 
+      module_->print(file, NULL); 
+      file.close(); 
     }
 
     void Generate();

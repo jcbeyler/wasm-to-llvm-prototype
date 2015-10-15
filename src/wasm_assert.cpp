@@ -67,7 +67,7 @@ void WasmAssertReturn::Codegen(WasmFile* file) {
 
   // Finally, create the function type.
   llvm::FunctionType* fct_type = llvm::FunctionType::get(result_type, params, false);
-  llvm::Function* fct = llvm::Function::Create(fct_type, Function::ExternalLinkage, name_, module);
+  llvm::Function* fct = llvm::Function::Create(fct_type, Function::ExternalLinkage, mangled_name_, module);
 
   // Now create the first bb.
   llvm::BasicBlock* bb = llvm::BasicBlock::Create(getGlobalContext(), "entry", fct);
@@ -93,7 +93,7 @@ void WasmAssertTrap::Codegen(WasmFile* file) {
 
   // Finally, create the function type.
   llvm::FunctionType* fct_type = llvm::FunctionType::get(result_type, params, false);
-  llvm::Function* fct = llvm::Function::Create(fct_type, Function::ExternalLinkage, name_, module);
+  llvm::Function* fct = llvm::Function::Create(fct_type, Function::ExternalLinkage, mangled_name_, module);
 
   // Now create the first bb.
   llvm::BasicBlock* bb = llvm::BasicBlock::Create(getGlobalContext(), "entry", fct);
