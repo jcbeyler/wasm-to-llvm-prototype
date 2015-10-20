@@ -76,7 +76,7 @@ class WasmAssert {
     }
 
     const std::string& GetMangledName() const {
-      return name_;
+      return mangled_name_;
     }
 };
 

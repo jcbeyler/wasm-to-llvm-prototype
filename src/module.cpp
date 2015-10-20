@@ -54,7 +54,7 @@ llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID id, ETYPE t
 }
 
 llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
-  WasmFunction* wasm_fct = GetWasmFunction("assert_trap_handler", true);;
+  WasmFunction* wasm_fct = GetWasmFunction("wp_assert_trap_handler", true);;
   llvm::Function* fct;
 
   if (wasm_fct == nullptr) {
@@ -72,7 +72,7 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
     // Finally create the actual function type: int foo (char* (*)()).
     llvm::FunctionType* ft = FunctionType::get(llvm::Type::getInt32Ty(getGlobalContext()), params, false);
 
-    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "assert_trap_handler", module_);
+    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "wp_assert_trap_handler", module_);
 
     wasm_fct = new WasmFunction(nullptr, fct->getName(), fct, this, INT_32);
 
