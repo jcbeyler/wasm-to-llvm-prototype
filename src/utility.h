@@ -29,7 +29,10 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type);
 llvm::Type* ConvertType(ETYPE type);
 
 // Code generation for type conversion.
-llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* dest_type, llvm::IRBuilder<>& builder);
+llvm::Value* HandleSimpleTypeCasts(llvm::Value* value, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder);
+llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* src_type, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder);
 
-llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, int result_bw, int dest_bw, llvm::IRBuilder<>& builder);
+llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, int result_bw, int dest_bw, bool sign, llvm::IRBuilder<>& builder);
+
+char* AddWasmFunctionPrefix(const char* s);
 #endif

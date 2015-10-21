@@ -65,13 +65,29 @@ class Operation {
     }
 };
 
-class ReinterpretOperation : public Operation {
+class ConversionOperation : public Operation {
   protected:
     ETYPE src_;
 
   public:
-    ReinterpretOperation(ETYPE dest, ETYPE src) : 
-      Operation(REINTERPRET_OPER, false, dest), src_(src) {
+    ConversionOperation(OPERATION op, bool sign, ETYPE dest, ETYPE src) : 
+      Operation(op, sign, dest), src_(src) {
+    }
+
+    ConversionOperation(OPERATION op, bool sign = false) :
+      Operation(op, sign), src_(VOID) {
+    }
+
+    OPERATION GetOperation() const {
+      return op_;
+    }
+
+    ETYPE SetDest(ETYPE val) {
+      type_ = val;
+    }
+
+    ETYPE SetSrc(ETYPE val) {
+      src_ = val;
     }
 
     ETYPE GetDest() const {
@@ -83,7 +99,8 @@ class ReinterpretOperation : public Operation {
     }
 
     virtual void Dump() {
-      BISON_PRINT("%s.reinterpret/%s", GetETypeName(type_), GetETypeName(src_));
+      BISON_PRINT("%s.%s_%c/%s", GetETypeName(type_), DumpOperation(op_), 
+                                 sign_or_order_ ? 's' : 'u', GetETypeName(src_));
     }
 };
 

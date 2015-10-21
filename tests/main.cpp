@@ -26,7 +26,7 @@ extern "C" {
   int execute_asserts(void);
 
   // Wrapper around the assert trap.
-  int assert_trap_handler(char* (*fct)(void)) {
+  int wp_assert_trap_handler(char* (*fct)(void)) {
     int idx = 0;
     char* exception = nullptr;
 

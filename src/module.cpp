@@ -24,23 +24,37 @@
 #include "utility.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Bitcode/ReaderWriter.h"
 #include "llvm/IR/Intrinsics.h"
 
-llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE type) {
+llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID id, ETYPE type) {
+  llvm::Module* module = file_->GetIntrinsicModule();
+
   std::vector<Type*> args;
 
-  // For the moment they are all using just integers are their arguments.
+  // Push the argument type.
   args.push_back(ConvertType(type));
 
-  llvm::Function* fct = llvm::Intrinsic::getDeclaration(module_, name, args);
+  llvm::Function* fct;
 
-  assert(fct != nullptr);
+  if (module == module_) {
+    fct = llvm::Intrinsic::getDeclaration(module, id, args);
+  } else {
+    // In this case, we don't care about this fct. What we want is get a prototype for it.
+    std::string fname = llvm::Intrinsic::getName(id, args);
+
+    // Create the function type.
+    llvm::FunctionType* fct_type = llvm::Intrinsic::getType(llvm::getGlobalContext(), id, args);
+
+    // Use the prototype instead.
+    fct = Function::Create(fct_type, Function::ExternalLinkage, fname.c_str(), module_);  
+  }
 
   return fct;
 }
 
 llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
-  WasmFunction* wasm_fct = GetWasmFunction("assert_trap_handler", true);;
+  WasmFunction* wasm_fct = GetWasmFunction("wp_assert_trap_handler", true);;
   llvm::Function* fct;
 
   if (wasm_fct == nullptr) {
@@ -58,7 +72,7 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
     // Finally create the actual function type: int foo (char* (*)()).
     llvm::FunctionType* ft = FunctionType::get(llvm::Type::getInt32Ty(getGlobalContext()), params, false);
 
-    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "assert_trap_handler", module_);
+    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "wp_assert_trap_handler", module_);
 
     wasm_fct = new WasmFunction(nullptr, fct->getName(), fct, this, INT_32);
 
@@ -74,7 +88,7 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
 
 void WasmModule::Generate() {
   // Make the module, which holds all the code.
-  module_ = new llvm::Module("WasmJit", llvm::getGlobalContext());
+  module_ = new llvm::Module(name_.c_str(), llvm::getGlobalContext());
 
   // Some maintenance before to do.
   Initialize();
@@ -186,6 +200,14 @@ WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file) con
     if (check_file == true) {
       if (file_ != nullptr) {
         fct = file_->GetWasmFunction(name);
+      }
+
+      // If it does not exist in our module, let us create a prototype.
+      if (fct != nullptr) {
+        llvm::Function* llvm_fct = fct->GetFunction();
+        llvm::FunctionType* ft = llvm_fct->getFunctionType();
+
+        Function::Create(ft, llvm::Function::ExternalLinkage, name, module_);
       }
     }
   }

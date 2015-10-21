@@ -152,7 +152,6 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
   // Go through all the parameter fields.
   std::vector<ParamField*>::const_iterator it = params_.begin();
 
-  // Add arguments to the map or the maps.
   for (auto &arg: fct_->args()) {
     ParamField* pf = *it;
     Local* local = pf->GetLocal();
@@ -221,7 +220,7 @@ void WasmFunction::Generate(WasmModule* module) {
 }
 
 llvm::Value* WasmFunction::HandleReturn(llvm::Value* result, llvm::IRBuilder<>& builder) const {
-  return HandleTypeCasts(result, ConvertType(result_), builder);
+  return builder.CreateRet(HandleSimpleTypeCasts(result, ConvertType(result_), false, builder));
 }
 
 llvm::AllocaInst* WasmFunction::GetVariable(const char* name) const {

@@ -30,19 +30,29 @@ fi
 for f in $list; do
   echo $f
 
-  # Build the llvm IR
-  $exe $f 2> obj/test.ll
+  # Clean up
+  rm obj/*ll obj/*s
 
-  # Create the .s
-  llc-3.7 obj/test.ll
+  # Build the llvm IR
+  $exe $f
 
   if [ $? -ne 0 ]; then
     echo "LLVM transformation of $f failed. Bailing."
     exit 1
   fi
 
+  # Create the .s files
+  for f in obj/*ll; do
+    llc-3.7 $f
+
+    if [ $? -ne 0 ]; then
+      echo "LLVM transformation of $f failed. Bailing."
+      exit 1
+    fi
+  done
+
   # Create the test exec.
-  g++ obj/test.s tests/main.cpp -o obj/testit -std=gnu++0x
+  g++ obj/wasm_module*s tests/main.cpp -o obj/testit -std=gnu++0x
 
   if [ $? -ne 0 ]; then
     echo "Build of test $f failed. Bailing."

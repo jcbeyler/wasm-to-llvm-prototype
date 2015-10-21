@@ -67,7 +67,7 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
       wasm_module->GetWasmAssertTrapFunction();
 
       // Get a pointer to the wasm_assert function we are interested.
-      WasmFunction* wasm_fct = wasm_module->GetWasmFunction(elem->GetName().c_str(), true);
+      WasmFunction* wasm_fct = wasm_module->GetWasmFunction(elem->GetMangledName().c_str(), true);
       assert(wasm_fct != nullptr);
 
       // Hold this in a ValueExpression.

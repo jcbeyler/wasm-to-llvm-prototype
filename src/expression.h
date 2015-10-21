@@ -270,16 +270,27 @@ class CallExpression : public Expression {
   public:
     CallExpression(Variable* id, std::list<Expression*> *params) :
       call_id_(id), params_(params) {
+        // We need to fix the function call to have a wasm prefix.
+        FixCallName();
     }
 
     CallExpression(Variable* id, Expression* p) :
       call_id_(id) {
         params_ = new std::list<Expression*>();
         params_->push_back(p);
+        FixCallName();
     }
 
     CallExpression(Variable* id) :
       call_id_(id), params_(nullptr) {
+        FixCallName();
+    }
+
+    void FixCallName() {
+      if (call_id_->IsString()) {
+        char* name = AddWasmFunctionPrefix(call_id_->GetString());
+        call_id_->SetString(name);
+      }
     }
 
     Variable* GetVariable() const {

@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
+
+#include <sstream>
+
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -95,6 +98,16 @@ const char* DumpOperation(OPERATION op) {
       return "nearest";
     case COPYSIGN_OPER:
       return "copysign";
+    case EXTEND_OPER:
+      return "extend";
+    case WRAP_OPER:
+      return "wrap";
+    case DEMOTE_OPER:
+      return "demote";
+    case REINTERPRET_OPER:
+      return "reinterpret";
+    case PROMOTE_OPER:
+      return "demote";
   }
 
   return "Unknown";
@@ -118,42 +131,173 @@ llvm::Type* ConvertType(ETYPE type) {
   return llvm::Type::getVoidTy(llvm::getGlobalContext());
 }
 
-llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* dest_type, llvm::IRBuilder<>& builder) {
-  // Major issue here is casting if need be.
-  // First: Get the result and function types.
-  llvm::Type* result_type = value->getType();
-
-  llvm::Type::TypeID result_type_id = result_type->getTypeID();
+static llvm::Value* HandleTypeCastsFromFloats(llvm::Value* value, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder) {
   llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
 
-  // This will move after.
-  if (dest_type_id != result_type_id) {
-    fprintf(stderr, "%d - %d\n", dest_type_id, result_type_id);
-    assert(0);
-    return nullptr;
+  switch (dest_type_id) {
+    case llvm::Type::IntegerTyID: {
+      // Let us check we have the right size though.
+      int dest_type_bw = dest_type->getIntegerBitWidth();
+      llvm::Type* integer_type = dest_type;
+
+      if (dest_type_bw != 32) {
+        // First go to 32-bit integer.
+        integer_type = llvm::Type::getInt32Ty(llvm::getGlobalContext());
+      }
+
+      if (sign) {
+        value = builder.CreateFPToSI(value, dest_type, "fptosi");
+      } else {
+        value = builder.CreateFPToUI(value, dest_type, "fptoui");
+      }
+
+      if (dest_type_bw != 32) {
+        // Now go to the right size.
+        value = HandleIntegerTypeCast(value, dest_type, 32, 64, sign, builder);
+      }
+      return value;
+    }
+    case llvm::Type::DoubleTyID:
+      return builder.CreateFPExt(value, dest_type, "fpext");
+    default:
+      assert(0);
+  }
+
+  return nullptr;
+}
+
+static llvm::Value* HandleTypeCastsFromDoubles(llvm::Value* value, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder) {
+  llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
+
+  switch (dest_type_id) {
+    case llvm::Type::IntegerTyID: {
+      // Let us check we have the right size though.
+      int dest_type_bw = dest_type->getIntegerBitWidth();
+      llvm::Type* integer_type = dest_type;
+
+      if (dest_type_bw != 64) {
+        // First go to 32-bit integer.
+        integer_type = llvm::Type::getInt64Ty(llvm::getGlobalContext());
+      }
+
+      if (sign) {
+        value = builder.CreateFPToSI(value, dest_type, "fptosi");
+      } else {
+        value = builder.CreateFPToUI(value, dest_type, "fptoui");
+      }
+
+      if (dest_type_bw != 64) {
+        // Now go to the right size.
+        value = HandleIntegerTypeCast(value, dest_type, 64, 32, sign, builder);
+      }
+      return value;
+    }
+    case llvm::Type::FloatTyID:
+      return builder.CreateFPTrunc(value, dest_type, "fptrunc");
+    default:
+      assert(0);
+  }
+  return nullptr;
+}
+
+static llvm::Value* HandleTypeCastsFromIntegers(llvm::Value* value, int src_type_bw, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder) {
+  llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
+
+  switch (dest_type_id) {
+    case llvm::Type::IntegerTyID:
+      // We should never come here...
+      return HandleIntegerTypeCast(value, dest_type, src_type_bw, dest_type->getIntegerBitWidth(), sign, builder);
+      break;
+    case llvm::Type::FloatTyID:
+      // Not sure if this is required but if it does not fit in 32-bit,
+      //   go to double first.
+      if (src_type_bw != 32) {
+        value = HandleTypeCastsFromIntegers(value, src_type_bw,
+                                            llvm::Type::getDoubleTy(llvm::getGlobalContext()),
+                                            sign, builder);
+        return HandleTypeCastsFromDoubles(value, dest_type, sign, builder);
+      }
+
+      if (sign == true) {
+        return builder.CreateSIToFP(value, dest_type, "sitofp");
+      } else {
+        return builder.CreateUIToFP(value, dest_type, "uitofp");
+      }
+    case llvm::Type::DoubleTyID:
+      if (sign == true) {
+        return builder.CreateSIToFP(value, dest_type, "sitofp");
+      } else {
+        return builder.CreateUIToFP(value, dest_type, "uitofp");
+      }
+    default:
+      assert(0);
+  }
+  return nullptr;
+}
+
+llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* src_type, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder) {
+  if (dest_type != src_type) {
+    llvm::Type::TypeID src_type_id = src_type->getTypeID();
+
+    switch (src_type_id) {
+      case llvm::Type::IntegerTyID: {
+        int src_type_bw = src_type->getIntegerBitWidth();
+        return HandleTypeCastsFromIntegers(value, src_type_bw, dest_type, sign, builder);
+      }
+      case llvm::Type::FloatTyID:
+        return HandleTypeCastsFromFloats(value, dest_type, sign, builder);
+      case llvm::Type::DoubleTyID:
+        return HandleTypeCastsFromDoubles(value, dest_type, sign, builder);
+      case llvm::Type::PointerTyID:
+        // Probably not good to do this.
+        return value;
+      default: {
+        llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
+        fprintf(stderr, "HandleTypeCast failure: destination is %d and src is %d\n", dest_type_id, src_type_id);
+        assert(0);
+        break;
+      }
+    }
   } else {
     // A bit more code to handle integer case
+    llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
     if (dest_type_id == llvm::Type::IntegerTyID) {
       // Now check sizes.
       int dest_type_bw = dest_type->getIntegerBitWidth();
-      int result_type_bw = result_type->getIntegerBitWidth();
+      int src_type_bw = src_type->getIntegerBitWidth();
 
       // We have a problem here.
-      if (dest_type_bw != result_type_bw) {
+      if (dest_type_bw != src_type_bw) {
         // Handle difference of sizes.
-        value = HandleIntegerTypeCast(value, dest_type, result_type_bw, dest_type_bw, builder);
+        value = HandleIntegerTypeCast(value, dest_type, src_type_bw, dest_type_bw, sign, builder);
       }
     }
 
-    // Now create the result.
-    return builder.CreateRet(value);
+    return value;
   }
 }
 
-llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, int result_bw, int dest_bw, llvm::IRBuilder<>& builder) {
-  if (result_bw < dest_bw) {
-    // For now, we are assuming a zext is sufficient, it probably isn't :)... TODO
-    return builder.CreateZExt(value, dest_type, "zext_tmp");
+llvm::Value* HandleSimpleTypeCasts(llvm::Value* value, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder) {
+  // Major issue here is casting if need be.
+  // First: Get the result and function types.
+  llvm::Type* src_type = value->getType();
+  return HandleTypeCasts(value, src_type, dest_type, sign, builder);
+}
+
+llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, int src_bw, int dest_bw, bool sign, llvm::IRBuilder<>& builder) {
+  if (src_bw < dest_bw) {
+    if (sign) {
+      return builder.CreateSExt(value, dest_type, "sext_tmp");
+    } else {
+      return builder.CreateZExt(value, dest_type, "zext_tmp");
+    }
+  } else {
+    if (src_bw == dest_bw) {
+      // Corner case where nothing needs to be done.
+      return value;
+    } else {
+      return builder.CreateTrunc(value, dest_type, "trunc_tmp");
+    }
   }
   return nullptr;
 }
@@ -181,4 +325,11 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
   // Should not get here.
   assert(0);
   return VOID;
+}
+
+char* AddWasmFunctionPrefix(const char* s) {
+  const char* prefix = "wp_";
+  std::ostringstream oss;
+  oss << prefix << s;
+  return strdup(oss.str().c_str());
 }
