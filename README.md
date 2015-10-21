@@ -6,7 +6,7 @@ The Spec implementation is the reference for semantical questions. Here, we are 
 
 Currently, it can
 
-* *parse* a few of the spec test cases (supporting for now the float32.wasm, i32.wasm, i64.wasm, hexnum.wasm, and fac.wasm files)
+* *parse* a few of the spec test cases
 * *generate* LLVM IR and dumps it for each module file
 * *generate* the assertion opcodes to validate the LLVM IR
 * *generate* a single *execute_asserts* method that calls each assert, allowing easy testing with a very simple driver
@@ -22,7 +22,6 @@ The prototype currently does the following:
 
 The prototype does not do:
 
-* There are some limitations in type checking and handling on the LLVM side, consider it a feature
 * Assert traps are not yet supported (I tried but got side-tracked, it's a WIP)
 ** It currently just signals that traps are not supported...
 * Probably a lot more things
@@ -30,7 +29,7 @@ The prototype does not do:
 Things that I know we need to improve:
 
 * The makefile; really did a hack job there
-* The flex/bison analyzers will need to get ripped out and we could put something else if we want to keep the IR -> LLVM IR
+* The flex/bison analyzers will probably need to get ripped out and we could put something else if we want to keep the IR -> LLVM IR
 * The coding convention probably
 * The uni-testing of the code itself, I've used asserts to ensure that I find the todos left behind my trail blazing
 * There are TODOs in the code that need to be handled
@@ -82,7 +81,7 @@ The implementation consists of the following folders:
 
 * tests*: test folder with copies of the spec test files that are supported, meaning that the compiler does generate llvm code for them.
 
-The code itself is divided in:
+The code itself is divided in major components:
 
 * *opt.flex* : the Flex lexer that reads the input code
 
@@ -92,6 +91,8 @@ The code itself is divided in:
 
 * *wasm_file.h* : entry point of code generation since it represents the whole file
 
+* *other.cpp/.h* : all the rest of the files :)
+
 ## What Next?
 
-* TODOs: types, clean code, full wasm S-expression support, assertion test compliance, wrapper around for performance analysis
+* TODOs: clean code, full wasm S-expression support, assertion trap test compliance, wrapper around for performance analysis
