@@ -194,9 +194,27 @@ class ValueHolder {
           value_.f = strtof(s, &end);
           assert(end != nullptr && (*end == ')' || *end == '\0'));
 
-          // Nan is a bit special: strtod seems to not take the sign well.
-          if (strstr(s, "nan") != nullptr && *s == '-') {
-            value_.f *= -1;
+          // Nan is a bit special: strtof seems to not take the sign well.
+          //   Also some implementations make strtof go for silent nans instead.
+          if (strstr(s, "nan") != nullptr) {
+            if (*s == '-') {
+              value_.f *= -1;
+            }
+
+            // Get the ( character if it exists.
+            char* ptr = strchr(s, '(');
+
+            if (ptr != nullptr) {
+              // Go to next character.
+              ptr++;
+
+              int64_t hex_value = strtol(ptr, &end, 16);
+
+              assert(end != nullptr && *end ==  ')');
+
+              // This is safe whether strtof did it or not so let us just do it.
+              value_.i |= hex_value;
+            }
           }
 
           type_ = VH_FLOAT;
@@ -209,9 +227,27 @@ class ValueHolder {
           value_.d = strtod(s, &end);
           assert(end != nullptr && (*end == ')' || *end == '\0'));
 
-          // Nan is a bit special: strtod seems to not take the sign well.
-          if (strstr(s, "nan") != nullptr && *s == '-') {
-            value_.d *= -1;
+          // Nan is a bit special: strtof seems to not take the sign well.
+          //   Also some implementations make strtof go for silent nans instead.
+          if (strstr(s, "nan") != nullptr) {
+            if (*s == '-') {
+              value_.d *= -1;
+            }
+
+            // Get the ( character if it exists.
+            char* ptr = strchr(s, '(');
+
+            if (ptr != nullptr) {
+              // Go to next character.
+              ptr++;
+
+              int64_t hex_value = strtol(ptr, &end, 16);
+
+              assert(end != nullptr && *end ==  ')');
+
+              // This is safe whether strtof did it or not so let us just do it.
+              value_.i |= hex_value;
+            }
           }
           type_ = VH_DOUBLE;
         }
