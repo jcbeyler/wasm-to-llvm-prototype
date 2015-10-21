@@ -305,7 +305,6 @@ llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, in
 ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
   llvm::Type::TypeID type_id = type->getTypeID();
 
-  // TODO: incomplete for now.
   switch(type_id) {
     case llvm::Type::VoidTyID:
       return VOID;

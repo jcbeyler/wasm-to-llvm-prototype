@@ -16,8 +16,6 @@
 #ifndef H_MODULE
 #define H_MODULE
 
-
-// TODO: find better.
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/IR/IRBuilder.h"

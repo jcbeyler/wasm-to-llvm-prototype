@@ -13,6 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
+
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Intrinsics.h"
+
+#include "binop.h"
 #include "wasm_assert.h"
 #include "wasm_file.h"
 
@@ -82,7 +90,7 @@ void WasmAssertReturn::Codegen(WasmFile* file) {
 }
 
 void WasmAssertTrap::Codegen(WasmFile* file) {
-  // TODO: this is different normally, we want to wrap it with a signal handler.
+  // TODO: this does not work: FPE will always trap and I don't see how to solve it right now.
   // This method has no parameters.
   std::vector<llvm::Type*> params;
 
