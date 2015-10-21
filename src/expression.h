@@ -18,33 +18,14 @@
 
 #include <list>
 
+#include "base_expression.h"
 #include "enums.h"
 #include "operation.h"
-#include "utility.h"
 #include "simple.h"
+#include "utility.h"
 
 // Forward declaration.
 class WasmFunction;
-
-/**
- * This basic file contains a lot of classes to support the various Wasm opcodes.
- */
-
-class Expression {
-  public:
-    virtual void Dump(int tabs) const {
-      BISON_TABBED_PRINT(tabs, "(Base Expression %p)", this);
-    }
-
-    virtual bool GoesToTheLine() const {
-      return false;
-    }
-
-    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-      BISON_PRINT("No code generation for this expression node\n");
-      return nullptr;
-    }
-};
 
 class Nop : public Expression {
   public:
@@ -85,67 +66,6 @@ class Unop : public Expression {
     }
 };
 
-class Binop : public Expression {
-  protected:
-    Expression *left_, *right_;
-    Operation* operation_;
-
-    ETYPE HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt);
-    llvm::Value* HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder);
-    llvm::Value* HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool right);
-    llvm::Value* HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool div);
-    llvm::Value* HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder);
-
-  public:
-    Binop(Operation* op, Expression* l, Expression* r) :
-      operation_(op), left_(l), right_(r) {
-    }
-
-    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
-
-    Expression* GetRight() const {
-      return right_;
-    }
-
-    Expression* GetLeft() const {
-      return left_;
-    }
-
-    Expression* SetRight(Expression* r) {
-      right_ = r;
-    }
-
-    Expression* SetLeft(Expression* l) {
-      left_ = l;
-    }
-
-    virtual void Dump(int tabs) const {
-      BISON_TABBED_PRINT(tabs, "(");
-
-      if (operation_) {
-        operation_->Dump();
-      } else {
-        BISON_PRINT("Operation is nullptr");
-      }
-
-      BISON_PRINT(" ");
-
-      if (left_) {
-        left_->Dump(0);
-      } else {
-        BISON_PRINT("nullptr");
-      }
-
-      BISON_PRINT(" ");
-
-      if (right_) {
-        right_->Dump(0);
-      } else {
-        BISON_PRINT("nullptr");
-      }
-      BISON_PRINT(")");
-    }
-};
 
 class GetLocal : public Expression {
   protected:

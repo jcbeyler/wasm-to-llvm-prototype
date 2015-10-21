@@ -30,7 +30,13 @@ extern "C" {
     int idx = 0;
     char* exception = nullptr;
 
-    std::cerr << "Currently the trapping system does not work, ignoring" << std::endl;
+    static int cnt = 0;
+
+    // Only print this out once...
+    if (cnt == 0) {
+      std::cerr << "Currently the trapping system does not work, ignoring" << std::endl;
+      cnt++;
+    }
     return -1;
   }
 }
