@@ -33,11 +33,6 @@ using namespace llvm;
 // Forward declaration.
 class WasmModule;
 
-struct AllocaTyped {
-  llvm::AllocaInst* alloca_;
-  ETYPE type;
-};
-
 /**
  * Definition of a function node in the Wasm format
  */
