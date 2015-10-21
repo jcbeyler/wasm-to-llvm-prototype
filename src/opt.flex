@@ -228,7 +228,38 @@ nop {
 
 reinterpret {
   LEX_DEBUG_PRINT("REINTERPRET\n");
+  yylval.l = REINTERPRET_OPER;
   return REINTERPRET;
+}
+
+convert {
+  LEX_DEBUG_PRINT("CONVERT\n");
+  yylval.l = CONVERT_OPER;
+  return CONVERT;
+}
+
+demote {
+  LEX_DEBUG_PRINT("DEMOTE\n");
+  yylval.l = DEMOTE_OPER;
+  return DEMOTE;
+}
+
+promote {
+  LEX_DEBUG_PRINT("PROMOTE\n");
+  yylval.l = PROMOTE_OPER;
+  return PROMOTE;
+}
+
+wrap {
+  LEX_DEBUG_PRINT("WRAP\n");
+  yylval.l = WRAP_OPER;
+  return WRAP;
+}
+
+extend {
+  LEX_DEBUG_PRINT("EXTEND\n");
+  yylval.l = EXTEND_OPER;
+  return EXTEND;
 }
 
 block {

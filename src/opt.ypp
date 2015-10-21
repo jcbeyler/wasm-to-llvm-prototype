@@ -43,6 +43,7 @@ std::unique_ptr<Globals> g_variables;
 %}
 
 %code requires {
+  class ConversionOperation;
   class Expression;
   enum ETYPE;
   class FunctionField;
@@ -70,6 +71,7 @@ std::unique_ptr<Globals> g_variables;
   char* string;
   void* voidptr;
 
+  ConversionOperation* co;
   WasmExport* e;
   ETYPE et;
   Expression* ex;
@@ -85,7 +87,7 @@ std::unique_ptr<Globals> g_variables;
   WasmFile* wf;
 }
 
-%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL REINTERPRET
+%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -97,6 +99,7 @@ std::unique_ptr<Globals> g_variables;
 %token TYPE
 %token NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %token SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
+%token WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET
 %token LE LT GE GT
 %token ASSERT_RETURN_TOKEN
 %token ASSERT_TRAP_TOKEN
@@ -111,7 +114,7 @@ std::unique_ptr<Globals> g_variables;
 %type<voidptr> EXPRESSIONS
 
 %type<b> SIGN
-%type<string> FLOAT
+%type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
 %type<et> TYPE
 %type<ex> CALL BREAK BLOCK
@@ -122,12 +125,14 @@ std::unique_ptr<Globals> g_variables;
 %type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
 %type<m> MODULE MODULE_ELEMS
 %type<o> BINOP UNOP
-%type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP
+%type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP POTENTIAL_SIGNED_TRUNC
 %type<op> BINOP_OPER UNOP_OPER
 %type<op> NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %type<op> LE LT GE GT
 %type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
+%type<op> WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET CONVERSION
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
+%type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN
@@ -319,7 +324,6 @@ UNOP_OPER:
   SQRT  { $$ = $1; } |
   CEIL  { $$ = $1; } |
   FLOOR  { $$ = $1; } |
-  TRUNC  { $$ = $1; } |
   NEAREST  { $$ = $1; } |
   ABS  { $$ = $1; } |
   NEG  { $$ = $1; }
@@ -349,6 +353,26 @@ BINOP:
       $$ = op;
     }
 
+CONVERSION:
+  WRAP { $$ = $1; } |
+  EXTEND { $$ = $1; } |
+  CONVERT { $$ = $1; } |
+  DEMOTE { $$ = $1; } |
+  PROMOTE { $$ = $1; } |
+  REINTERPRET { $$ = $1; }
+
+POTENTIAL_SIGNED_CONVERSION:
+  CONVERSION { $$ = new ConversionOperation($1); } |
+  CONVERSION '_' SIGN {
+    $$ = new ConversionOperation($1, $3);
+  }
+
+POTENTIAL_SIGNED_TRUNC :
+  TRUNC { $$ = new ConversionOperation($1); } |
+  TRUNC '_' SIGN {
+    $$ = new ConversionOperation($1, $3);
+  }
+
 UNOP:
     TYPE '.' POTENTIAL_SIGNED_UNOP {
       Operation* op = $3;
@@ -356,8 +380,23 @@ UNOP:
       op->SetType(type);
       $$ = op;
     } |
-    TYPE '.' REINTERPRET '/' TYPE {
-      ReinterpretOperation* op = new ReinterpretOperation($1, $5);
+    TYPE '.' POTENTIAL_SIGNED_CONVERSION '/' TYPE {
+      ConversionOperation* op = static_cast<ConversionOperation*> ($3);
+      op->SetSrc($5);
+      op->SetDest($1);
+      $$ = op;
+    } |
+    TYPE '.' POTENTIAL_SIGNED_TRUNC '/' TYPE {
+      ConversionOperation* op = static_cast<ConversionOperation*> ($3);
+      op->SetSrc($5);
+      op->SetDest($1);
+      $$ = op;
+    } |
+    TYPE '.' POTENTIAL_SIGNED_TRUNC {
+      ConversionOperation* op = static_cast<ConversionOperation*> ($3);
+      // Just give the same source to destination types.
+      op->SetSrc($1);
+      op->SetDest($1);
       $$ = op;
     }
 

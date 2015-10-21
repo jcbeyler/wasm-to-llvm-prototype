@@ -37,10 +37,16 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     case ABS_OPER:
     case CEIL_OPER:
     case FLOOR_OPER:
-    case TRUNC_OPER:
     case NEAREST_OPER:
       is_intrinsic = true;
       break;
+    case TRUNC_OPER: {
+        // Use the intrinsic value if we have the same type.
+        //   Basically this is used for f32.trunc or f64.trunc...
+        ConversionOperation* conversion = dynamic_cast<ConversionOperation*>(operation_);
+        is_intrinsic = (conversion->GetSrc() == conversion->GetDest());
+        break;
+    }
     default:
       break;
   }
@@ -117,9 +123,17 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         return builder.CreateFSub(lv, rv, "subtmp");
       }
       case REINTERPRET_OPER: {
-        ReinterpretOperation* reinterpret = dynamic_cast<ReinterpretOperation*>(operation_);
-        assert(reinterpret != nullptr);
-        return builder.CreateBitCast(rv, ConvertType(type), "reinterpret");
+        return builder.CreateBitCast(rv, ConvertType(type), DumpOperation(op));
+      }
+      case EXTEND_OPER: 
+      case TRUNC_OPER:
+      case PROMOTE_OPER:
+      case DEMOTE_OPER:
+      case CONVERT_OPER:
+      case WRAP_OPER: {
+        ConversionOperation* conversion = dynamic_cast<ConversionOperation*>(operation_);
+        assert(conversion != nullptr);
+        return HandleTypeCasts(rv, ConvertType(conversion->GetSrc()), ConvertType(type), operation_->GetSignedOrOrdered(), builder);
       }
       default:
         assert(0);
@@ -599,15 +613,24 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 }
 
 llvm::Value* GetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  llvm::AllocaInst* alloca = nullptr; 
+  const char* name = nullptr;
+
   if (var_->IsString()) {
-    const char* name = var_->GetString();
-    return builder.CreateLoad(fct->GetVariable(name), name);
+    name = var_->GetString();
+    alloca = fct->GetVariable(name);
   } else {
     size_t idx = var_->GetIdx();
     std::ostringstream oss;
     oss << "var_idx_" << idx;
-    return builder.CreateLoad(fct->GetVariable(idx), oss.str().c_str());
+    name = oss.str().c_str();
+    alloca = fct->GetVariable(idx);
   }
+
+  assert(alloca != nullptr);
+
+  llvm::Value* res = builder.CreateLoad(alloca->getAllocatedType(), alloca, name);
+  return res;
 }
 
 llvm::Value* SetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
