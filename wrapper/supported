@@ -1,0 +1,14 @@
+conversions.wast
+f32.wast
+f32_cmp.wast
+f64.wast
+f64_cmp.wast
+fac.wast
+# Can't yet due to multiple functions with the same names:
+# float_exprs.wast
+float_literals.wast
+float_misc.wast
+i32.wast
+i64.wast
+int_exprs.wast
+int_literals.wast
