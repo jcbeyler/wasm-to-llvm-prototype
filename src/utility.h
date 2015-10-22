@@ -27,6 +27,7 @@ const char* DumpOperation(OPERATION op);
 // Conversion of enumeration type to LLVM type.
 ETYPE ConvertTypeID2ETYPE(llvm::Type* type);
 llvm::Type* ConvertType(ETYPE type);
+size_t GetTypeSize(ETYPE type);
 
 // Code generation for type conversion.
 llvm::Value* HandleSimpleTypeCasts(llvm::Value* value, llvm::Type* dest_type, bool sign, llvm::IRBuilder<>& builder);

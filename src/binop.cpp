@@ -28,8 +28,8 @@ class ReallyDivRem : public Binop {
     bool sign_;
 
   public:
-    ReallyDivRem(Expression* l, Expression* r, bool div = true, bool sign = false) :
-      Binop(new Operation(div ? DIV_OPER : REM_OPER, sign), l, r), div_(div), sign_(sign) {
+    ReallyDivRem(Expression* l, Expression* r, bool div = true, bool sign = false, ETYPE type = VOID) :
+      Binop(new Operation(div ? DIV_OPER : REM_OPER, sign, type), l, r), div_(div), sign_(sign) {
       }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
@@ -78,8 +78,8 @@ class ReallyShift : public Binop {
     bool is_right_shift_;
 
   public:
-    ReallyShift(Expression* l, Expression* r, bool right = true, bool sign = false) :
-      Binop(new Operation(right ? SHR_OPER : SHL_OPER, sign), l, r), is_right_shift_(right) {
+    ReallyShift(Expression* l, Expression* r, bool right = true, bool sign = false, ETYPE type = VOID) :
+      Binop(new Operation(right ? SHR_OPER : SHL_OPER, sign, type), l, r), is_right_shift_(right) {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
@@ -121,16 +121,16 @@ class ReallyShift : public Binop {
 };
 
 ETYPE Binop::HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt) {
-  assert(lt == rt);
-
   // If type is not void, the type should be the same as lt.
-  if (type != VOID) {
-    ETYPE rt_type = ConvertTypeID2ETYPE(rt);
-    assert(ConvertType(type) == rt);
+  llvm::Type* chosen = lt;
+  llvm::Type* void_type = llvm::Type::getVoidTy(llvm::getGlobalContext());
+
+  if (chosen == void_type) {
+    chosen = rt;
   }
 
   // Return lt's type.
-  return ConvertTypeID2ETYPE(rt);
+  return ConvertTypeID2ETYPE(chosen);
 }
 
 llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder) {
@@ -238,7 +238,7 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     Const* zero = new Const(type, vh);
 
     // False path here goes back to right_ here.
-    ReallyShift* rsr = new ReallyShift(left_, right_, right);
+    ReallyShift* rsr = new ReallyShift(left_, right_, right, sign, type);
 
     IfExpression* width_check = new IfExpression(cond, zero, rsr);
 
@@ -262,10 +262,10 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     Const* width_minus_one = new Const(type, vh);
 
     // False path here goes back to right_ here.
-    ReallyShift* rsr = new ReallyShift(left_, width_minus_one, true, true);
+    ReallyShift* rsr = new ReallyShift(left_, width_minus_one, true, true, type);
 
     // Create the actual shift.
-    ReallyShift* original_rsr = new ReallyShift(left_, right_, true, true);
+    ReallyShift* original_rsr = new ReallyShift(left_, right_, true, true, type);
 
     // False path here goes back to the real shift here.
     IfExpression* width_check = new IfExpression(cond, rsr, original_rsr);
@@ -295,7 +295,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   // TODO: when rereading the spec, this does not seem right for signed divide; even rem I'm not sure.
   if (div) {
     if (sign) {
-      ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign);
+      ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign, type);
       if (type == INT_32) {
         vh = new ValueHolder(0x7fffffff);
       } else {
@@ -320,7 +320,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
     }
   }
 
-  ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign);
+  ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign, type);
   IfExpression* left_test = new IfExpression(cond, left, rdr);
 
   // Now we generate the test on the right side: is it -1?
@@ -330,7 +330,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   op = new Operation(EQ_OPER, true, type);
   cond = new Binop(op, right_, minus_one);
 
-  rdr = new ReallyDivRem(left_, right_, div, sign);
+  rdr = new ReallyDivRem(left_, right_, div, sign, type);
   IfExpression* full_test = new IfExpression(cond, left_test, rdr);
 
   // Now generate code.

@@ -29,6 +29,7 @@
 #include "function_field.h"
 #include "globals.h"
 #include "local.h"
+#include "memory.h"
 #include "module.h"
 #include "operation.h"
 #include "simple.h"
@@ -49,9 +50,11 @@ std::unique_ptr<Globals> g_variables;
   enum ETYPE;
   class FunctionField;
   class Globals;
+  class Load;
   class Local;
   class Operation;
   enum OPERATION;
+  class Store;
   class ValueHolder;
   class Variable;
   class WasmAssert;
@@ -78,10 +81,12 @@ std::unique_ptr<Globals> g_variables;
   Expression* ex;
   WasmFunction* f;
   FunctionField* ff;
+  Load* ld;
   Local* local;
   WasmModule* m;
   Operation* o;
   OPERATION op;
+  Store* st;
   Variable* v;
   ValueHolder* vh;
   WasmAssert* wa;
@@ -110,6 +115,7 @@ std::unique_ptr<Globals> g_variables;
 %token LOCAL_TOKEN
 %token CONST
 %token LABEL
+%token MEMORY STORE LOAD
 
 %type<voidptr> FUNCTION_FIELDS
 %type<voidptr> EXPRESSIONS
@@ -118,20 +124,23 @@ std::unique_ptr<Globals> g_variables;
 %type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
 %type<et> TYPE
-%type<ex> CALL BREAK BLOCK
+%type<ex> CALL BREAK BLOCK MEMORY_OPERATION
 %type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
 %type<l> RESULT INTEGER
+%type<ld> POTENTIAL_SIGNED_LOAD LOAD_POTENTIAL_SIZE 
 %type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
 %type<m> MODULE MODULE_ELEMS
-%type<o> BINOP UNOP
+%type<o> BINOP UNOP 
 %type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP POTENTIAL_SIGNED_TRUNC
+%type<op> LOAD STORE
 %type<op> BINOP_OPER UNOP_OPER
 %type<op> NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %type<op> LE LT GE GT
-%type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
+%type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN 
 %type<op> WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET CONVERSION
+%type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
 %type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
@@ -194,6 +203,11 @@ MODULE_ELEMS:
     WasmModule* module = $2;
     WasmExport* e = $1;
     module->AddExport(e);
+    $$ = module;
+  } | 
+   '(' MEMORY INTEGER ')' MODULE_ELEMS {
+    WasmModule* module = $5;
+    module->AddMemory($3);
     $$ = module;
   } | {
     $$ = new WasmModule();
@@ -458,6 +472,49 @@ BLOCK:
     $$ = new BlockExpression(list);
   }
 
+LOAD_POTENTIAL_SIZE:
+  LOAD { $$ = new Load(); } |
+  LOAD INTEGER { $$ = new Load($2); }
+
+POTENTIAL_SIGNED_LOAD:
+  LOAD_POTENTIAL_SIZE { $$ = $1; } |
+  LOAD_POTENTIAL_SIZE '_' SIGN { 
+    Load* ld = $1;
+    ld->SetSign($3);
+    $$ = ld;
+  }
+
+STORE_POTENTIAL_SIZE:
+  STORE { $$ = new Store(); } |
+  STORE INTEGER { $$ = new Store($2); }
+
+POTENTIAL_SIGNED_STORE:
+  STORE_POTENTIAL_SIZE { $$ = $1; } |
+  STORE_POTENTIAL_SIZE '_' SIGN {
+    Store* st = $1;
+    st->SetSign($3);
+    $$ = st;
+  }
+
+MEMORY_OPERATION:
+  TYPE '.' POTENTIAL_SIGNED_LOAD EXPRESSION { 
+    Load* ld = $3;
+    ld->SetType($1);
+    ld->SetAddress($4); 
+
+    // Size might need to get updated here.
+    ld->UpdateSize();
+    $$ = ld; } |
+  TYPE '.' POTENTIAL_SIGNED_STORE EXPRESSION EXPRESSION {
+    Store* st = $3;
+    st->SetType($1);
+    st->SetAddress($4);
+    st->SetValue($5); 
+
+    // Size might need to get updated here.
+    st->UpdateSize();
+    $$ = st; }
+
 EXPRESSION_INNER:
     NOP { $$ = nullptr; } |
     BINOP EXPRESSION EXPRESSION {
@@ -517,6 +574,7 @@ EXPRESSION_INNER:
       LoopExpression* loop = new LoopExpression(expr);
       $$ = loop;
     } |
+    MEMORY_OPERATION { $$ = $1; } |
     BREAK { $$ = $1; } |
     BLOCK { $$ = $1; } |
     RETURN_TOKEN EXPRESSION {

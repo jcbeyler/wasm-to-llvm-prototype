@@ -216,6 +216,8 @@ void WasmFunction::Generate(WasmModule* module) {
     if (is_last_return == false && last != nullptr) {
       HandleReturn(last, builder);
     }
+  } else {
+    builder.CreateRetVoid();
   }
 }
 

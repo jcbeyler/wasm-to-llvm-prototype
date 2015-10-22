@@ -61,7 +61,7 @@ class Operation {
     }
 
     virtual void Dump() {
-      BISON_PRINT("%s.%s", DumpOperation(op_), GetETypeName(type_));
+      BISON_PRINT("%s.%s", GetETypeName(type_), DumpOperation(op_));
     }
 };
 
