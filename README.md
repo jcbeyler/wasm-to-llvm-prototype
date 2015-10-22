@@ -57,6 +57,15 @@ make
 
 You'll get an executable named llvm_wasm.
 
+## Testsuite Submodule
+
+The test framework is built on having the .wast files there but in order to make things simpler, I have gone down the submodule route. So now, you must initalize and update it.
+
+```
+git submodule init
+git submodule update
+```
+
 ## Synopsis
 
 You can call the executable with:
