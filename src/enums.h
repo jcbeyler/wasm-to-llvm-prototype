@@ -69,6 +69,8 @@ enum OPERATION {
   EXTEND_OPER,
   DEMOTE_OPER,
   PROMOTE_OPER,
+  STORE_OPER,
+  LOAD_OPER,
 };
 
 #endif

@@ -20,6 +20,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 
+#include "debug.h"
 #include "utility.h"
 
 const char* GetETypeName(ETYPE type) {
@@ -38,6 +39,20 @@ const char* GetETypeName(ETYPE type) {
       return "ptr64";
   }
   return "Unknown";
+}
+
+size_t GetTypeSize(ETYPE type) {
+  switch (type) {
+    case FLOAT_32:
+    case INT_32:
+      return 32;
+    case FLOAT_64:
+    case INT_64:
+      return 64;
+    default:
+      assert(0);
+  }
+  return 0;
 }
 
 const char* DumpOperation(OPERATION op) {
@@ -253,7 +268,7 @@ llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* src_type, llvm::Typ
         return value;
       default: {
         llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
-        fprintf(stderr, "HandleTypeCast failure: destination is %d and src is %d\n", dest_type_id, src_type_id);
+        BISON_PRINT("HandleTypeCast failure: destination is %d and src is %d\n", dest_type_id, src_type_id);
         assert(0);
         break;
       }
@@ -318,6 +333,10 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
           return INT_32;
         case 64:
           return INT_64;
+        default:
+          // Should never get here.
+          assert(0);
+          break;
       }
   }
 

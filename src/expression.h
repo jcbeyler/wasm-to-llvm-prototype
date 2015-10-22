@@ -217,7 +217,7 @@ class CallExpression : public Expression {
       return call_id_;
     }
 
-    llvm::Function* GetCallee(WasmFunction* fct) const;
+    WasmFunction* GetCallee(WasmFunction* fct) const;
 
     virtual void Dump(int tabs) const {
       BISON_PRINT("(Call ");

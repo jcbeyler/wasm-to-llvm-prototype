@@ -57,10 +57,11 @@ class WasmModule {
     std::vector<WasmFunction*> vector_functions_;
 
     std::string name_;
+    int memory_;
 
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
-      module_(module), fpm_(fpm), file_(file) {
+      module_(module), fpm_(fpm), file_(file), memory_(0) {
         static int cnt = 0;
         std::ostringstream oss;
         oss << "wasm_module_" << cnt;
@@ -97,6 +98,11 @@ class WasmModule {
       raw_fd_ostream file(oss.str().c_str(), ec, of); 
       module_->print(file, NULL); 
       file.close(); 
+    }
+
+    void AddMemory(size_t value) {
+      assert(memory_ == 0);
+      memory_ = value;
     }
 
     void Generate();

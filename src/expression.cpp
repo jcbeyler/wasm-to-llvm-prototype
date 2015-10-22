@@ -85,10 +85,9 @@ llvm::Value* Const::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   return nullptr;
 }
 
-llvm::Function* CallExpression::GetCallee(WasmFunction* fct) const {
+WasmFunction* CallExpression::GetCallee(WasmFunction* fct) const {
   WasmModule* module = fct->GetModule();
   WasmFunction* wfct = nullptr;
-  llvm::Function* result = nullptr;
 
   if (call_id_->IsString()) {
     const char* name = call_id_->GetString();
@@ -98,18 +97,14 @@ llvm::Function* CallExpression::GetCallee(WasmFunction* fct) const {
     wfct  = module->GetWasmFunction(idx);
   }
 
-  if (wfct != nullptr) {
-    result = wfct->GetFunction();
-  }
+  assert(wfct != nullptr);
 
-  // Should never be null, however we can't right now call inter-module functions.
-  assert(result != nullptr);
-
-  return result;
+  return wfct;
 }
 
 llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  llvm::Function* callee = GetCallee(fct);
+  WasmFunction* wfct = GetCallee(fct);
+  llvm::Function* callee = wfct->GetFunction();
   assert(callee != nullptr);
 
   // Now create the arguments for the call creation.
@@ -121,7 +116,13 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
     }
   }
 
-  return builder.CreateCall(callee, args, "calltmp");
+  const char* return_name = "";
+
+  if (wfct->GetResult() != VOID) {
+    return_name = "calltmp";
+  }
+
+  return builder.CreateCall(callee, args, return_name);
 }
 
 llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {

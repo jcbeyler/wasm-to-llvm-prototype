@@ -173,6 +173,11 @@ max {
   return MAX;
 }
 
+memory {
+  LEX_DEBUG_PRINT("MEMORY\n");
+  return MEMORY;
+}
+
 min {
   LEX_DEBUG_PRINT("MIN\n");
   yylval.l = MIN_OPER;
@@ -367,6 +372,17 @@ param {
   return PARAM_TOKEN;
 }
 
+store {
+  LEX_DEBUG_PRINT("STORE\n");
+  yylval.l = STORE_OPER;
+  return STORE;
+}
+
+load {
+  LEX_DEBUG_PRINT("LOAD\n");
+  yylval.l = LOAD_OPER;
+  return LOAD;
+}
 
 f32 {
   LEX_DEBUG_PRINT("Type %s\n", yytext);
