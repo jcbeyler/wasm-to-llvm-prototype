@@ -25,7 +25,7 @@
 #include "module.h"
 
 llvm::Value* GetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  llvm::AllocaInst* alloca = nullptr; 
+  llvm::AllocaInst* alloca = nullptr;
   const char* name = nullptr;
 
   if (var_->IsString()) {

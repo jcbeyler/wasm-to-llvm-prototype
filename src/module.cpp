@@ -47,7 +47,7 @@ llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID id, ETYPE t
     llvm::FunctionType* fct_type = llvm::Intrinsic::getType(llvm::getGlobalContext(), id, args);
 
     // Use the prototype instead.
-    fct = Function::Create(fct_type, Function::ExternalLinkage, fname.c_str(), module_);  
+    fct = Function::Create(fct_type, Function::ExternalLinkage, fname.c_str(), module_);
   }
 
   return fct;

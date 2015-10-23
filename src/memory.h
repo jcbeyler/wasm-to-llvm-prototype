@@ -91,7 +91,7 @@ class Store : public MemoryExpression {
                                      llvm::IRBuilder<>& builder);
 
   public:
-    Store(Expression* add, Expression* value) : 
+    Store(Expression* add, Expression* value) :
       MemoryExpression(add), value_(value) {
     }
 

@@ -129,16 +129,16 @@ std::unique_ptr<Globals> g_variables;
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
 %type<l> RESULT INTEGER
-%type<ld> POTENTIAL_SIGNED_LOAD LOAD_POTENTIAL_SIZE 
+%type<ld> POTENTIAL_SIGNED_LOAD LOAD_POTENTIAL_SIZE
 %type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
 %type<m> MODULE MODULE_ELEMS
-%type<o> BINOP UNOP 
+%type<o> BINOP UNOP
 %type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP POTENTIAL_SIGNED_TRUNC
 %type<op> LOAD STORE
 %type<op> BINOP_OPER UNOP_OPER
 %type<op> NE EQ DIV ADD SUB MUL REM AND OR XOR SHL SHR CLZ CTZ POPCNT
 %type<op> LE LT GE GT
-%type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN 
+%type<op> SQRT MAX MIN CEIL FLOOR TRUNC NEAREST ABS NEG COPYSIGN
 %type<op> WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET CONVERSION
 %type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
@@ -204,7 +204,7 @@ MODULE_ELEMS:
     WasmExport* e = $1;
     module->AddExport(e);
     $$ = module;
-  } | 
+  } |
    '(' MEMORY INTEGER ')' MODULE_ELEMS {
     WasmModule* module = $5;
     module->AddMemory($3);
@@ -483,7 +483,7 @@ LOAD_POTENTIAL_SIZE:
 
 POTENTIAL_SIGNED_LOAD:
   LOAD_POTENTIAL_SIZE { $$ = $1; } |
-  LOAD_POTENTIAL_SIZE '_' SIGN { 
+  LOAD_POTENTIAL_SIZE '_' SIGN {
     Load* ld = $1;
     ld->SetSign($3);
     $$ = ld;
@@ -502,10 +502,10 @@ POTENTIAL_SIGNED_STORE:
   }
 
 MEMORY_OPERATION:
-  TYPE '.' POTENTIAL_SIGNED_LOAD EXPRESSION { 
+  TYPE '.' POTENTIAL_SIGNED_LOAD EXPRESSION {
     Load* ld = $3;
     ld->SetType($1);
-    ld->SetAddress($4); 
+    ld->SetAddress($4);
 
     // Size might need to get updated here.
     ld->UpdateSize();
@@ -514,7 +514,7 @@ MEMORY_OPERATION:
     Store* st = $3;
     st->SetType($1);
     st->SetAddress($4);
-    st->SetValue($5); 
+    st->SetValue($5);
 
     // Size might need to get updated here.
     st->UpdateSize();

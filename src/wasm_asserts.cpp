@@ -42,7 +42,7 @@ void WasmAsserts::GenerateGeneralAssertCalls(WasmFile* file) {
   WasmFunction* wasm_fct = new WasmFunction(nullptr, name, fct, wasm_module, INT_32);
   const char* result_name = "result";
   Variable* result = new Variable(result_name);
-  wasm_fct->Allocate(result_name, 
+  wasm_fct->Allocate(result_name,
                          llvm::Type::getInt32Ty(llvm::getGlobalContext()),
                          builder);
 
