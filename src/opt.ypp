@@ -719,6 +719,8 @@ ASSERT_TRAP:
 
     list->push_back(return_expr);
 
+    // TODO still need to get line numbers.
+
     BlockExpression* block = new BlockExpression(list);
 
     // And create the trap with memory of the message.
