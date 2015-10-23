@@ -1,3 +1,4 @@
+left-to-right.wast
 endianness.wast
 conversions.wast
 f32.wast
