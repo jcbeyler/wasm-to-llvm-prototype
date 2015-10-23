@@ -184,6 +184,18 @@ llvm::AllocaInst* WasmFunction::CreateAlloca(const char* name, llvm::Type* type,
   return builder.CreateAlloca(type, 0, name);
 }
 
+void WasmFunction::GetBaseMemory(llvm::IRBuilder<>& builder) {
+  // Only care about this if we have a memory to the module.
+  //  We could check if the function would use it and use that but this should be
+  //   sufficient as LLVM can remove the call if it is unused.
+  if (module_->GetMemory() != 0) {
+    // Ok, then what we want is ask it for the address.
+    llvm::GlobalVariable* base = module_->GetBaseMemory();
+
+    local_base_ = builder.CreateLoad(base, "local_base");
+  }
+}
+
 void WasmFunction::Generate(WasmModule* module) {
   // Remember the module.
   module_ = module;
@@ -203,6 +215,9 @@ void WasmFunction::Generate(WasmModule* module) {
 
   // Now that we have that, we can actually create the allocas for the input arguments and the locals of the method.
   PopulateAllocas(builder);
+
+  // Generate the "get me the memory linear call".
+  GetBaseMemory(builder);
 
   for (auto iter : ast_) {
     Expression* exp = iter;

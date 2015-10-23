@@ -55,10 +55,15 @@ class WasmFunction {
     std::vector<Expression*> ast_;
     ETYPE result_;
 
+    llvm::Value* local_base_;
+
+    // Protected methods.
+    void GetBaseMemory(llvm::IRBuilder<>& builder);
+
   public:
     WasmFunction(std::list<FunctionField*>* f = nullptr, const std::string& s = "$anonymous",
                  llvm::Function* fct = nullptr, WasmModule* module = nullptr, ETYPE result = VOID) :
-      name_(s), fct_(fct), module_(module), fields_(f), result_(result) {
+      name_(s), fct_(fct), module_(module), fields_(f), result_(result), local_base_(nullptr) {
         // If anonymous, let's add a unique suffix.
         if (name_ == "anonymous") {
           static int cnt = 0;
@@ -108,14 +113,9 @@ class WasmFunction {
       return fct_;
     }
 
-    llvm::AllocaInst* GetVariable(const char* name) const;
-    llvm::AllocaInst* GetVariable(size_t idx) const;
-
-    llvm::AllocaInst* CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
-
-    void PopulateLocalHolders(llvm::IRBuilder<>& builder);
-    void PopulateAllocas(llvm::IRBuilder<>& builder);
-    llvm::AllocaInst* Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
+    llvm::Value* GetLocalBase() const {
+      return local_base_;
+    }
 
     ETYPE GetResult() const {
       return result_;
@@ -124,6 +124,15 @@ class WasmFunction {
     WasmModule* GetModule() const {
       return module_;
     }
+
+    llvm::AllocaInst* GetVariable(const char* name) const;
+    llvm::AllocaInst* GetVariable(size_t idx) const;
+
+    llvm::AllocaInst* CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
+
+    void PopulateLocalHolders(llvm::IRBuilder<>& builder);
+    void PopulateAllocas(llvm::IRBuilder<>& builder);
+    llvm::AllocaInst* Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
 
     void Generate(WasmModule* module);
     void GeneratePrototype(WasmModule* module);
@@ -134,6 +143,7 @@ class WasmFunction {
 
     llvm::Type* GetReturnType() const;
     llvm::Value* HandleReturn(llvm::Value* result, llvm::IRBuilder<>& builder) const;
+
 };
 
 #endif

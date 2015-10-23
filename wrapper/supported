@@ -1,3 +1,4 @@
+endianness.wast
 conversions.wast
 f32.wast
 f32_cmp.wast

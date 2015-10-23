@@ -27,7 +27,9 @@
 extern "C" {
   jmp_buf env;
   int execute_asserts(void);
+  void wasm_llvm_init(void);
 
+  extern char* wasm_module_0_memory_base;
 
   void fpe_handler(int arg) {
     longjmp(env, 1);
@@ -76,7 +78,11 @@ extern "C" {
 int main(void) {
   int res = -1;
 
+  // Call the glue first.
+  wasm_llvm_init();
+
   res = execute_asserts();
+
 
   if (res == -1) {
     return EXIT_SUCCESS;

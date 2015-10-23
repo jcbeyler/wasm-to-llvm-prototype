@@ -155,6 +155,68 @@ void WasmModule::Initialize() {
   llvm::PassManagerBuilder pmb;
   pmb.OptLevel = 1;
   pmb.populateModulePassManager(*fpm_);
+
+  // Now generate the memory base.
+  GenerateMemoryBaseFunction();
+}
+
+std::string WasmModule::GetMemoryBaseFunctionName() const {
+  std::ostringstream oss;
+  oss << "set_" << name_ << "_memory_base";
+  return oss.str();
+}
+
+std::string WasmModule::GetMemoryBaseName() const {
+  std::ostringstream oss;
+  oss << name_ << "_memory_base";
+  return oss.str();
+}
+
+void WasmModule::GenerateMemoryBaseFunction() {
+  if (memory_ != 0) {
+    // This will work until threading is not available but it should work well.
+    std::string name = GetMemoryBaseFunctionName();
+
+    // Get base types.
+    llvm::Type* char_type = llvm::Type::getInt8Ty(llvm::getGlobalContext());
+    llvm::Type* ptr_char_type = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+
+    // Create memory pointer.
+    memory_pointer_ = new llvm::GlobalVariable(
+        *module_,
+        ptr_char_type,
+        false,
+        llvm::GlobalValue::CommonLinkage,
+        ConstantPointerNull::get(ptr_char_type->getPointerTo()),
+        GetMemoryBaseName().c_str(),
+        nullptr,
+        llvm::GlobalVariable::NotThreadLocal
+        );
+
+    // Now what we need is to create the method: it is a void fct(void) method.
+    std::vector<llvm::Type*> params;
+    llvm::Type* result_type = llvm::Type::getVoidTy(llvm::getGlobalContext());
+    llvm::FunctionType* fct_type = llvm::FunctionType::get(result_type, params, false);
+    memory_allocator_fct_ = llvm::Function::Create(fct_type, Function::ExternalLinkage, name.c_str(), GetModule());
+
+    // Generate a single basic block.
+    llvm::BasicBlock* bb = llvm::BasicBlock::Create(getGlobalContext(), "entry", memory_allocator_fct_);
+    llvm::IRBuilder<> builder(getGlobalContext());
+    builder.SetInsertPoint(bb);
+
+    // Now call malloc on it with the amount.
+    llvm::Value* alloc_size = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, memory_, false));
+    llvm::Instruction* malloc_call = CallInst::CreateMalloc(builder.GetInsertBlock(),
+        llvm::Type::getInt32Ty(llvm::getGlobalContext()),
+        ptr_char_type, alloc_size, nullptr,
+        nullptr, "malloc");
+    builder.Insert(malloc_call, "calltmp");
+
+    // Now set that global variable to the return of the malloc.
+    builder.CreateStore(malloc_call, memory_pointer_, false);
+
+    builder.CreateRetVoid();
+  }
 }
 
 void WasmModule::Dump() {
