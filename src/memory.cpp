@@ -181,5 +181,6 @@ llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     assert(GetTypeSize(type_) == size_);
   }
 
-  return builder.CreateStore(value, address, "store");
+  builder.CreateStore(value, address, "store");
+  return value;
 }

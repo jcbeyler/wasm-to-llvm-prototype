@@ -209,6 +209,11 @@ MODULE_ELEMS:
     WasmModule* module = $5;
     module->AddMemory($3);
     $$ = module;
+  } |
+   '(' MEMORY INTEGER INTEGER ')' MODULE_ELEMS {
+    WasmModule* module = $6;
+    module->AddMemory($3, $4);
+    $$ = module;
   } | {
     $$ = new WasmModule();
   }

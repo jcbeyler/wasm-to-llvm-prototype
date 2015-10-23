@@ -16,7 +16,7 @@
 #ifndef H_WASMASSERTS
 #define H_WASMASSERTS
 
-#include <list>
+#include <deque>
 
 #include "wasm_assert.h"
 
@@ -26,14 +26,14 @@ class WasmFile;
 
 class WasmAsserts {
   protected:
-    std::list<WasmAssert*> asserts_;
+    std::deque<WasmAssert*> asserts_;
 
   public:
     WasmAsserts() {
     }
 
     void AddAssert(WasmAssert* a) {
-      asserts_.push_back(a);
+      asserts_.push_front(a);
     }
 
     void Dump() const {

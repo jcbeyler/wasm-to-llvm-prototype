@@ -59,6 +59,7 @@ class WasmModule {
     std::string name_;
 
     int64_t memory_;
+    int align_;
     llvm::GlobalVariable* memory_pointer_;
     llvm::Function* memory_allocator_fct_;
 
@@ -108,9 +109,10 @@ class WasmModule {
       file.close(); 
     }
 
-    void AddMemory(size_t value) {
+    void AddMemory(size_t value, size_t align = 0) {
       assert(memory_ == 0);
       memory_ = value;
+      align_ = align;
     }
 
     int GetMemory() const {

@@ -73,6 +73,10 @@ extern "C" {
     return 0;
 #endif
   }
+
+  double wp_store_f64(double);
+  int64_t wp_load_i64();
+  int wp_wasm_assert_15();
 }
 
 int main(void) {
@@ -82,7 +86,6 @@ int main(void) {
   wasm_llvm_init();
 
   res = execute_asserts();
-
 
   if (res == -1) {
     return EXIT_SUCCESS;
