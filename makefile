@@ -35,6 +35,8 @@ obj/opt.tab.cpp: src/opt.ypp $(HEADERS)
 $(SRC_OBJ):obj/%.o: src/%.cpp $(HEADERS)
 	g++ -c -o $@ $< ${CFLAGS}
 
+test: $(EXE)
+	wrapper/run.sh
 
 clean:
 	rm $(EXE) obj/*

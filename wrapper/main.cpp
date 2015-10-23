@@ -15,6 +15,8 @@
 */
 
 
+#include <setjmp.h>
+#include <fenv.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,26 +25,57 @@
 
 
 extern "C" {
+  jmp_buf env;
   int execute_asserts(void);
+
+
+  void fpe_handler(int arg) {
+    longjmp(env, 1);
+  }
 
   // Wrapper around the assert trap.
   int wp_assert_trap_handler(char* (*fct)(void)) {
     int idx = 0;
     char* exception = nullptr;
 
+    // Since this does not work for all traps yet, I'll disable it for now.
+    //   What is baffling my mind is I cannot get the stack overflow sigsegv caught.
+    //   I tried many variations of signal/sigaction to no avail... TODO
     static int cnt = 0;
-
-    // Only print this out once...
     if (cnt == 0) {
-      std::cerr << "Currently the trapping system does not work, ignoring" << std::endl;
+      std::cerr << "Not supporting traps yet." << std::endl;
       cnt++;
     }
+
     return -1;
+
+#if 0
+    sigset_t sigs;
+    sigemptyset (&sigs);
+    sigaddset (&sigs, SIGFPE);
+    sigprocmask (SIG_UNBLOCK, &sigs, NULL);
+    feclearexcept(FE_ALL_EXCEPT);
+    signal(SIGFPE, fpe_handler);
+    static int cnt = 0;
+
+    if (setjmp(env) != 0) {
+      std::cerr << "Recovered" << std::endl;
+      return -1;
+    } else {
+      exception = fct();
+
+      std::cerr << "Trap did not occur: " << exception << std::endl;
+    }
+
+    // Only print this out once...
+    return 0;
+#endif
   }
 }
 
 int main(void) {
   int res = -1;
+
   res = execute_asserts();
 
   if (res == -1) {

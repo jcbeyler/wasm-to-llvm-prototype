@@ -66,6 +66,20 @@ git submodule init
 git submodule update
 ```
 
+## Testing
+
+There is a wrapper folder that contains a testing script called run.sh. This script can be used at the root folder by doing:
+
+```
+./wrapper/run.sh
+```
+
+Or you can do:
+
+```
+make test
+```
+
 ## Synopsis
 
 You can call the executable with:
