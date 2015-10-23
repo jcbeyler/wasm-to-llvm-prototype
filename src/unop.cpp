@@ -124,7 +124,7 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
       case REINTERPRET_OPER:
         return builder.CreateBitCast(rv, ConvertType(type), DumpOperation(op));
 
-      case EXTEND_OPER: 
+      case EXTEND_OPER:
       case TRUNC_OPER:
       case PROMOTE_OPER:
       case DEMOTE_OPER:
@@ -134,7 +134,7 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         assert(conversion != nullptr);
         return HandleTypeCasts(rv, ConvertType(conversion->GetSrc()), ConvertType(type), operation_->GetSignedOrOrdered(), builder);
       }
-      
+
       default:
         assert(0);
         return nullptr;

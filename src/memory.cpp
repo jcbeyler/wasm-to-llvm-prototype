@@ -114,7 +114,7 @@ llvm::Value* Load::ResizeIntegerIfNeed(llvm::Value* value,
   if (value_type_bw != type_size) {
     // Then it depends on sign.
     value = HandleIntegerTypeCast(value, ConvertType(type_),
-                                  value_type_bw, 
+                                  value_type_bw,
                                   type_size,
                                   sign, builder);
   }
@@ -181,5 +181,6 @@ llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     assert(GetTypeSize(type_) == size_);
   }
 
-  return builder.CreateStore(value, address, "store");
+  builder.CreateStore(value, address, "store");
+  return value;
 }

@@ -59,12 +59,13 @@ class WasmModule {
     std::string name_;
 
     int64_t memory_;
+    int align_;
     llvm::GlobalVariable* memory_pointer_;
     llvm::Function* memory_allocator_fct_;
 
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
-      module_(module), fpm_(fpm), file_(file), 
+      module_(module), fpm_(fpm), file_(file),
       memory_(0), memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
         static int cnt = 0;
         std::ostringstream oss;
@@ -103,14 +104,15 @@ class WasmModule {
       llvm::sys::fs::OpenFlags of;
       std::ostringstream oss;
       oss << "obj/" << name_ << ".ll";
-      raw_fd_ostream file(oss.str().c_str(), ec, of); 
-      module_->print(file, NULL); 
-      file.close(); 
+      raw_fd_ostream file(oss.str().c_str(), ec, of);
+      module_->print(file, NULL);
+      file.close();
     }
 
-    void AddMemory(size_t value) {
+    void AddMemory(size_t value, size_t align = 0) {
       assert(memory_ == 0);
       memory_ = value;
+      align_ = align;
     }
 
     int GetMemory() const {

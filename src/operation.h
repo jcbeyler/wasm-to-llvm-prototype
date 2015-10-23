@@ -70,7 +70,7 @@ class ConversionOperation : public Operation {
     ETYPE src_;
 
   public:
-    ConversionOperation(OPERATION op, bool sign, ETYPE dest, ETYPE src) : 
+    ConversionOperation(OPERATION op, bool sign, ETYPE dest, ETYPE src) :
       Operation(op, sign, dest), src_(src) {
     }
 
@@ -99,7 +99,7 @@ class ConversionOperation : public Operation {
     }
 
     virtual void Dump() {
-      BISON_PRINT("%s.%s_%c/%s", GetETypeName(type_), DumpOperation(op_), 
+      BISON_PRINT("%s.%s_%c/%s", GetETypeName(type_), DumpOperation(op_),
                                  sign_or_order_ ? 's' : 'u', GetETypeName(src_));
     }
 };

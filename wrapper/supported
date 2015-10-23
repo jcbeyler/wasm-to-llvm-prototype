@@ -1,3 +1,4 @@
+float_memory.wast
 left-to-right.wast
 endianness.wast
 conversions.wast
