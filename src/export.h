@@ -37,7 +37,7 @@ class WasmExport {
 
     void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(export %s ", name_.c_str());
-      var_->Dump(0);
+      var_->Dump();
       BISON_PRINT(")");
     }
 };

@@ -61,7 +61,7 @@ class Binop : public Expression {
       left_ = l;
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(");
 
       if (operation_) {
@@ -73,7 +73,7 @@ class Binop : public Expression {
       BISON_PRINT(" ");
 
       if (left_) {
-        left_->Dump(0);
+        left_->Dump();
       } else {
         BISON_PRINT("nullptr");
       }
@@ -81,7 +81,7 @@ class Binop : public Expression {
       BISON_PRINT(" ");
 
       if (right_) {
-        right_->Dump(0);
+        right_->Dump();
       } else {
         BISON_PRINT("nullptr");
       }
