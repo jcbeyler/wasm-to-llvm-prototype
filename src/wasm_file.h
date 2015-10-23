@@ -26,6 +26,7 @@ class WasmFile {
     WasmAsserts asserts_;
     std::vector<WasmModule*> modules_;
     WasmModule* assert_module_;
+    WasmModule* glue_module_;
 
   public:
     WasmFile() : assert_module_(nullptr) {
@@ -49,6 +50,10 @@ class WasmFile {
       if (assert_module_ != nullptr) {
         assert_module_->Print();
       }
+
+      if (glue_module_ != nullptr) {
+        glue_module_->Print();
+      }
     }
 
     void Dump() {
@@ -69,7 +74,11 @@ class WasmFile {
       }
 
       asserts_.Generate(this);
+
+      GenerateInitializeModules();
     }
+
+    void GenerateInitializeModules();
 
     WasmFunction* GetWasmFunction(const char* name) {
       // Return function if found.

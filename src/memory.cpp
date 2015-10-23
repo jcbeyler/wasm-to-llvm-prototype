@@ -15,6 +15,7 @@
 */
 
 #include "memory.h"
+#include "function.h"
 
 llvm::Type* MemoryExpression::GetAddressType() const {
   llvm::Type* type = nullptr;
@@ -91,6 +92,13 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
   }
 
   assert(type != nullptr);
+
+  // Create the base address in the same right type.
+  llvm::Value* local_base = fct->GetLocalBase();
+  local_base = builder.CreatePtrToInt(local_base, address_i->getType(), "base");
+
+  address_i = builder.CreateAdd(address_i, local_base, "add_with_offset");
+
   return builder.CreateIntToPtr(address_i, type, "ptr");
 }
 

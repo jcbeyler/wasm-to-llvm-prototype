@@ -61,7 +61,7 @@ class MemoryExpression : public Expression {
       BISON_TABBED_PRINT(tabs, "(%s.memory operation", GetETypeName(type_));
 
       if (address_) {
-        address_->Dump(0);
+        address_->Dump();
       } else {
         BISON_PRINT("Address is nullptr");
       }
@@ -117,7 +117,7 @@ class Store : public MemoryExpression {
       BISON_PRINT("_%c ", sign_ ? 's' : 'u');
 
       if (address_) {
-        address_->Dump(0);
+        address_->Dump();
       } else {
         BISON_PRINT("Address is nullptr");
       }
@@ -125,7 +125,7 @@ class Store : public MemoryExpression {
       BISON_PRINT(" ");
 
       if (value_) {
-        value_->Dump(0);
+        value_->Dump();
       } else {
         BISON_PRINT("nullptr");
       }
@@ -162,7 +162,7 @@ class Load : public MemoryExpression {
       BISON_PRINT("_%c ", sign_ ? 's' : 'u');
 
       if (address_) {
-        address_->Dump(0);
+        address_->Dump();
       } else {
         BISON_PRINT("Address is nullptr");
       }

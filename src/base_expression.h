@@ -29,7 +29,7 @@ class WasmFunction;
 
 class Expression {
   public:
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Base Expression %p)", this);
     }
 

@@ -57,11 +57,15 @@ class WasmModule {
     std::vector<WasmFunction*> vector_functions_;
 
     std::string name_;
-    int memory_;
+
+    int64_t memory_;
+    llvm::GlobalVariable* memory_pointer_;
+    llvm::Function* memory_allocator_fct_;
 
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
-      module_(module), fpm_(fpm), file_(file), memory_(0) {
+      module_(module), fpm_(fpm), file_(file), 
+      memory_(0), memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
         static int cnt = 0;
         std::ostringstream oss;
         oss << "wasm_module_" << cnt;
@@ -71,6 +75,10 @@ class WasmModule {
 
     void AddFunction(WasmFunction* wf) {
       functions_.push_front(wf);
+    }
+
+    llvm::Function* GetMemoryAllocator() {
+      return memory_allocator_fct_;
     }
 
     void AddExport(WasmExport* e) {
@@ -104,6 +112,18 @@ class WasmModule {
       assert(memory_ == 0);
       memory_ = value;
     }
+
+    int GetMemory() const {
+      return memory_;
+    }
+
+    llvm::GlobalVariable* GetBaseMemory() const {
+      return memory_pointer_;
+    }
+
+    void GenerateMemoryBaseFunction();
+    std::string GetMemoryBaseFunctionName() const;
+    std::string GetMemoryBaseName() const;
 
     void Generate();
     void Dump();

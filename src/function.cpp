@@ -31,10 +31,12 @@ void WasmFunction::FindParams(std::vector<llvm::Type*>& llvm_params) const {
                                               it++) {
     ParamField* pf = *it;
     Local* local = pf->GetLocal();
-    LocalElem* elem = local->GetOnlyElem();
-    assert(elem != nullptr);
 
-    llvm_params.push_back(ConvertType(elem->GetType()));
+    const std::list<LocalElem*>& list = local->GetList();
+
+    for (auto elem : list) {
+      llvm_params.push_back(ConvertType(elem->GetType()));
+    }
   }
 }
 
@@ -148,15 +150,33 @@ llvm::AllocaInst* WasmFunction::Allocate(const char* name, llvm::Type* type, llv
 }
 
 void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
-  size_t idx = 0;
+  // The problem is that:
+  //    WASM allows you to do (params i32 i32 ...) where a single node can have multiple parameters.
+  //
+  // However LLVM has to go through each argument so we now have to go at different speeds through
+  //   the two IR lists.
+
+  // So let's explode the parameters here. If need be, we could do it once and for all if needed again
+  //   but it seems not...
+  std::list<LocalElem*> elems;
+
+  for (auto it : params_) {
+    ParamField& pf = *it;
+    Local* local = pf.GetLocal();
+
+    const std::list<LocalElem*>& list = local->GetList();
+
+    for(auto elem : list) {
+      elems.push_back(elem);
+    }
+  }
+
   // Go through all the parameter fields.
-  std::vector<ParamField*>::const_iterator it = params_.begin();
+  std::list<LocalElem*>::const_iterator elem_it = elems.begin();
 
   for (auto &arg: fct_->args()) {
-    ParamField* pf = *it;
-    Local* local = pf->GetLocal();
-    LocalElem* elem = local->GetOnlyElem();
-    assert(elem != nullptr);
+    assert(elem_it != elems.end());
+    LocalElem* elem = *elem_it;
 
     // Get the type.
     ETYPE etype = elem->GetType();
@@ -173,9 +193,9 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
     // Now create store towards that alloca.
     builder.CreateStore(&arg, alloca_var);
 
-    assert(it != params_.end());
-    it++;
+    elem_it++;
   }
+  assert(elem_it == elems.end());
 
   // Generate place holders for the locals.
   PopulateLocalHolders(builder);
@@ -183,6 +203,18 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
 
 llvm::AllocaInst* WasmFunction::CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder) {
   return builder.CreateAlloca(type, 0, name);
+}
+
+void WasmFunction::GetBaseMemory(llvm::IRBuilder<>& builder) {
+  // Only care about this if we have a memory to the module.
+  //  We could check if the function would use it and use that but this should be
+  //   sufficient as LLVM can remove the call if it is unused.
+  if (module_->GetMemory() != 0) {
+    // Ok, then what we want is ask it for the address.
+    llvm::GlobalVariable* base = module_->GetBaseMemory();
+
+    local_base_ = builder.CreateLoad(base, "local_base");
+  }
 }
 
 void WasmFunction::Generate(WasmModule* module) {
@@ -204,6 +236,9 @@ void WasmFunction::Generate(WasmModule* module) {
 
   // Now that we have that, we can actually create the allocas for the input arguments and the locals of the method.
   PopulateAllocas(builder);
+
+  // Generate the "get me the memory linear call".
+  GetBaseMemory(builder);
 
   for (auto iter : ast_) {
     Expression* exp = iter;

@@ -46,7 +46,7 @@ class Unop : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(");
 
       if (operation_) {
@@ -58,7 +58,7 @@ class Unop : public Expression {
       BISON_PRINT(" ");
 
       if (only_) {
-        only_->Dump(0);
+        only_->Dump();
       } else {
         BISON_PRINT("nullptr");
       }
@@ -75,7 +75,7 @@ class GetLocal : public Expression {
     GetLocal(Variable* v = nullptr) : var_(v) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       if (var_) {
         BISON_TABBED_PRINT(tabs, "(GetLocal %s)", var_->GetString());
       } else {
@@ -95,10 +95,10 @@ class SetLocal : public Expression {
     SetLocal(Variable* v, Expression* val) : var_(v), value_(val) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       if (var_ && value_) {
         BISON_TABBED_PRINT(tabs, "(SetLocal %s ", var_->GetString());
-        value_->Dump(0);
+        value_->Dump();
         BISON_PRINT(")");
       } else {
         BISON_TABBED_PRINT(tabs, "(SetLocal nullptr)");
@@ -119,10 +119,10 @@ class IfExpression : public Expression {
       cond_(c), true_cond_(t), false_cond_(f) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       if (cond_ && true_cond_) {
         BISON_TABBED_PRINT(tabs, "(If ");
-        cond_->Dump(0);
+        cond_->Dump();
         BISON_PRINT("\n");
         true_cond_->Dump(tabs + 1);
         BISON_PRINT("\n");
@@ -169,7 +169,7 @@ class Const: public Expression {
       }
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       if (value_) {
         BISON_TABBED_PRINT(tabs, "(const.%s ", GetETypeName(type_));
         value_->Dump();
@@ -219,10 +219,10 @@ class CallExpression : public Expression {
 
     WasmFunction* GetCallee(WasmFunction* fct) const;
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_PRINT("(Call ");
       if (call_id_) {
-        call_id_->Dump(0);
+        call_id_->Dump();
       } else {
         BISON_PRINT("NO-ID");
       }
@@ -230,7 +230,7 @@ class CallExpression : public Expression {
       if (params_) {
         for (auto elem : *params_) {
           BISON_PRINT(" ");
-          elem->Dump(0);
+          elem->Dump();
         }
       }
 
@@ -248,11 +248,11 @@ class ReturnExpression : public Expression {
     ReturnExpression(Expression* expr) : result_(expr) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Return");
       if (result_) {
         BISON_PRINT(" ");
-        result_->Dump(0);
+        result_->Dump();
       }
       BISON_PRINT(")");
     }
@@ -272,7 +272,7 @@ class LoopExpression : public Expression {
     LoopExpression(Expression* expr) : loop_(expr) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Loop\n");
       if (loop_) {
         loop_->Dump(tabs + 1);
@@ -296,12 +296,12 @@ class LabelExpression : public Expression {
     LabelExpression(Variable* v, Expression* e) : var_(v), expr_(e) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Label");
 
       if (var_) {
         BISON_PRINT(" ");
-        var_->Dump(0);
+        var_->Dump();
       }
 
       BISON_PRINT("\n");
@@ -327,12 +327,12 @@ class BreakExpression : public Expression {
     BreakExpression(Variable* v = nullptr, Expression* e = nullptr) : var_(v), expr_(e) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Break");
 
       if (var_) {
         BISON_PRINT(" ");
-        var_->Dump(0);
+        var_->Dump();
       }
 
       if (expr_) {
@@ -353,7 +353,7 @@ class BlockExpression : public Expression {
     BlockExpression(std::list<Expression*>* l) : list_(l) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Block");
 
       if (list_) {
@@ -386,7 +386,7 @@ class StringExpression : public Expression {
     StringExpression(char* s) : s_(s) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(String Expression %s)", s_);
     }
 
@@ -403,7 +403,7 @@ class ValueExpression : public Expression {
     ValueExpression(llvm::Value* value) : value_(value) {
     }
 
-    virtual void Dump(int tabs) const {
+    virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Value Expression %p)", value_);
     }
 
