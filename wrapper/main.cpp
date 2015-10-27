@@ -29,8 +29,6 @@ extern "C" {
   int execute_asserts(void);
   void wasm_llvm_init(void);
 
-  extern char* wasm_module_0_memory_base;
-
   void fpe_handler(int arg) {
     longjmp(env, 1);
   }
@@ -73,10 +71,6 @@ extern "C" {
     return 0;
 #endif
   }
-
-  double wp_store_f64(double);
-  int64_t wp_load_i64();
-  int wp_wasm_assert_15();
 }
 
 int main(void) {
