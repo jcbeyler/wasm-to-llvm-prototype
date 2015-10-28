@@ -59,7 +59,8 @@ for name in `ls -d perf_tests/*`; do
     done
 
     # Create the test exec.
-    gcc -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit -lrt
+    gcc -O2 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O2 -lrt
+    gcc -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O3 -lrt
 
     if [ $? -ne 0 ]; then
       echo "Build of test $wast failed. Bailing."
@@ -72,7 +73,10 @@ for name in `ls -d perf_tests/*`; do
     fi
 
     # Run the test.
-    obj/testit $args
+    echo "In O2:"
+    obj/testit_O2 $args
+    echo "In O3:"
+    obj/testit_O3 $args
 
     if [ $? -ne 0 ]; then
       echo "Test failed: $wast. Bailing."
