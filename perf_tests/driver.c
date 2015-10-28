@@ -13,11 +13,16 @@ int run_c(void*, int);
 int wasm_llvm_init();
 
 void print_time(struct timespec* start, struct timespec *end, int iterations) {
+  long start_s = start->tv_sec;
+  long end_s = end->tv_sec;
   long start_ns = start->tv_nsec;
   long end_ns = end->tv_nsec;
-  double average = (end_ns - start_ns) / ((double) iterations);
 
-  printf("Time between start/stop is %ld, average is %f\n", end_ns - start_ns, average);
+  long start_time = start_s * 1000000000 + start_ns;
+  long end_time = end_s * 1000000000 + end_ns;
+  double average = (end_time - start_time) / ((double) iterations);
+
+  printf("Time between in average is %f\n", average);
 }
 
 int main(int argc, char** argv) {
@@ -47,20 +52,20 @@ int main(int argc, char** argv) {
 
   // Let us run the wasm version a certain number of times.
   int meta = 1000;
-  clock_gettime(CLOCK_REALTIME, &start);
+  clock_gettime(CLOCK_MONOTONIC, &start);
   for (i = 0; i < meta; i++) {
     run_wasm(value);
   }
-  clock_gettime(CLOCK_REALTIME, &end);
+  clock_gettime(CLOCK_MONOTONIC, &end);
   print_time(&start, &end, meta);
 
   printf("Running C with %d\n", value);
   void* data = init_c(value);
-  clock_gettime(CLOCK_REALTIME, &start);
+  clock_gettime(CLOCK_MONOTONIC, &start);
   for (i = 0; i < meta; i++) {
     run_c(data, value);
   }
-  clock_gettime(CLOCK_REALTIME, &end);
+  clock_gettime(CLOCK_MONOTONIC, &end);
   print_time(&start, &end, meta);
   return EXIT_SUCCESS;
 }
