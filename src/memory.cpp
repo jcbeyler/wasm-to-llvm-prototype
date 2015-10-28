@@ -56,22 +56,21 @@ llvm::Type* MemoryExpression::GetAddressType() const {
 }
 
 llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& builder) const {
-  llvm::Value* address_i = address_->Codegen(fct, builder);
-  llvm::Type* type = nullptr;
+  llvm::Type* ptr_type= nullptr;
 
   if (type_ == INT_32 || type_ == INT_64) {
     switch (size_) {
       case 8:
-        type = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
         break;
       case 16:
-        type = llvm::Type::getInt16PtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getInt16PtrTy(llvm::getGlobalContext());
         break;
       case 32:
-        type = llvm::Type::getInt32PtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getInt32PtrTy(llvm::getGlobalContext());
         break;
       case 64:
-        type = llvm::Type::getInt64PtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getInt64PtrTy(llvm::getGlobalContext());
         break;
       default:
         assert(0);
@@ -80,10 +79,10 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
   } else {
     switch (size_) {
       case 32:
-        type = llvm::Type::getFloatPtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getFloatPtrTy(llvm::getGlobalContext());
         break;
       case 64:
-        type = llvm::Type::getDoublePtrTy(llvm::getGlobalContext());
+        ptr_type= llvm::Type::getDoublePtrTy(llvm::getGlobalContext());
         break;
       default:
         assert(0);
@@ -94,6 +93,9 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
   assert(type != nullptr);
 
   // Create the base address in the same right type.
+  llvm::Type* dest_type = ConvertType(type_);
+
+  llvm::Value* address_i = address_->Codegen(fct, builder);
   llvm::Value* local_base = fct->GetLocalBase();
   local_base = builder.CreatePtrToInt(local_base, address_i->getType(), "base");
 
