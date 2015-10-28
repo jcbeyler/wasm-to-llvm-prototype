@@ -80,6 +80,29 @@ Or you can do:
 make test
 ```
 
+## Performance Testing
+
+There is a perf_tests folder containing performance tests to compare C-code compiled with GCC and Wasm code compiled with LLVM and see differences of performance. At some point, I might make it even and use LLVM on both sides but why not make it more fun? :)
+
+To do that, simply go in the root folder and run:
+./perf_tests/run.sh
+
+And it should spit out for example:
+
+```
+In O2:
+Running wasm with 1000
+Time between in average is 460590.632000
+Running C with 1000
+Time between in average is 407488.623000
+In O3:
+Running wasm with 1000
+Time between in average is 447032.405000
+Running C with 1000
+Time between in average is 115641.934000
+Tests passed
+```
+
 ## Synopsis
 
 You can call the executable with:
