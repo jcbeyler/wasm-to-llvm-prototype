@@ -18,9 +18,18 @@
 
 #include <stdlib.h>
 
+extern void* wasm_module_0_memory_base;
+
 void* init_sum_c(int n) {
-  // We want n * 4-bytes.
-  return malloc(4 * n);
+  // Just use the linear memory from the wasm module.
+  int* tab = wasm_module_0_memory_base;
+
+  int i;
+  for (i = 0; i < n; i++) {
+    tab[i] = i;
+  }
+
+  return wasm_module_0_memory_base;
 }
 
 int run_sum_c(void* data, int n) {
