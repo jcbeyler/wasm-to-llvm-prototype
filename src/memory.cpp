@@ -90,7 +90,7 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
     }
   }
 
-  assert(type != nullptr);
+  assert(ptr_type != nullptr);
 
   // Create the base address in the same right type.
   llvm::Type* dest_type = ConvertType(type_);
@@ -101,7 +101,7 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
 
   address_i = builder.CreateAdd(address_i, local_base, "add_with_offset");
 
-  return builder.CreateIntToPtr(address_i, type, "ptr");
+  return builder.CreateIntToPtr(address_i, ptr_type, "ptr");
 }
 
 llvm::Value* Load::ResizeIntegerIfNeed(llvm::Value* value,
