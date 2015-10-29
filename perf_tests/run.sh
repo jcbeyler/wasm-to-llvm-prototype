@@ -73,9 +73,9 @@ for name in `ls -d perf_tests/*`; do
     fi
 
     # Run the test.
-    echo "In O2:"
+    echo "GCC in O2, wasm-to-llvm unchanged:"
     obj/testit_O2 $args
-    echo "In O3:"
+    echo "GCC in O3, wasm-to-llvm unchanged:"
     obj/testit_O3 $args
 
     if [ $? -ne 0 ]; then
