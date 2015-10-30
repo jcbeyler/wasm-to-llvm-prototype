@@ -1,3 +1,4 @@
+../perf_tests/vector/vector.wast
 ../perf_tests/sum_array/sum.wast
 float_memory.wast
 left-to-right.wast

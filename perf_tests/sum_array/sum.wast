@@ -23,7 +23,7 @@
     (i64.store (get_local 0) (i64.mul (i64.const 4) (get_local 1)))
   )
 
-  (export "getter"$getter)
+  (export "getter" $getter)
 
   (func $setter (param i32) (result i32)
     (local i32)
