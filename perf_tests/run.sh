@@ -81,10 +81,12 @@ for name in `ls -d perf_tests/$dir`; do
     fi
 
     # Run the test.
-    echo "GCC in O2, wasm-to-llvm unchanged:"
-    obj/testit_O2 $args
-    echo "GCC in O3, wasm-to-llvm unchanged:"
-    obj/testit_O3 $args
+    echo "Wasm:"
+    obj/testit_O2 -w $args
+    echo "GCC in O2"
+    obj/testit_O2 -c $args
+    echo "GCC in O3"
+    obj/testit_O3 -c $args
 
     if [ $? -ne 0 ]; then
       echo "Test failed: $wast. Bailing."
