@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   init_wasm(value);
 
   // Let us run the wasm version a certain number of times.
-  int meta = 1000;
+  int meta = 10;
   clock_gettime(CLOCK_MONOTONIC, &start);
   for (i = 0; i < meta; i++) {
     run_wasm(value);

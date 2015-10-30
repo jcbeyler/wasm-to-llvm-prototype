@@ -13,7 +13,7 @@
 ;; limitations under the License.
 
 (module
-  (memory 40000 4)
+  (memory 40000000 4)
 
   (func $getter (param i32) (result i32)
     (i32.load (i32.mul (i32.const 4) (get_local 0)))
