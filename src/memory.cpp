@@ -97,7 +97,17 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
 
   llvm::Value* address_i = address_->Codegen(fct, builder);
   llvm::Value* local_base = fct->GetLocalBase();
-  local_base = builder.CreatePtrToInt(local_base, address_i->getType(), "base");
+  llvm::Type* type_64 = llvm::Type::getInt64Ty(llvm::getGlobalContext());
+  local_base = builder.CreatePtrToInt(local_base, type_64, "base");
+
+  llvm::Type* address_type = address_i->getType();
+  assert(address_type->isIntegerTy() == true);
+  int bw = address_i->getType()->getIntegerBitWidth();
+
+  // If not 64, transform it into 64.
+  if (bw != 64) {
+    address_i = HandleIntegerTypeCast(address_i, type_64, bw, 64, false, builder);
+  }
 
   address_i = builder.CreateAdd(address_i, local_base, "add_with_offset");
 
