@@ -23,7 +23,15 @@ if [ ! -e $exe ]; then
   exit 1
 fi
 
-for name in `ls -d perf_tests/*`; do
+dir="*"
+
+if [ $# == 1 ]; then
+  dir=$1
+fi
+
+echo "Going to run perf_tests/$dir"
+
+for name in `ls -d perf_tests/$dir`; do
   if [ ! -d $name ]; then
     continue
   fi

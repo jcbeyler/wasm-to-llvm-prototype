@@ -97,6 +97,9 @@ WasmFunction* CallExpression::GetCallee(WasmFunction* fct) const {
     wfct  = module->GetWasmFunction(idx);
   }
 
+  if (wfct == nullptr) {
+    BISON_PRINT("Problem with finding %s\n", call_id_->GetString());
+  }
   assert(wfct != nullptr);
 
   return wfct;
