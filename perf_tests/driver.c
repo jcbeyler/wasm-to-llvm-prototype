@@ -14,6 +14,7 @@
 // limitations under the License.
 */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -46,13 +47,39 @@ int main(int argc, char** argv) {
   struct timespec start, end;
 
   if (argc < 2) {
-    fprintf(stderr, "Usage: %s <value>\n", argv[0]);
+    fprintf(stderr, "Usage: %s [-w] [-c] <value>\n", argv[0]);
+    fprintf(stderr, "\t -w only execute wasm\n");
+    fprintf(stderr, "\t -c only execute c\n");
     return EXIT_FAILURE;
+  }
+
+  // Ok normally I would do this better with option handling but hacking it for now.
+  if (argc >= 4) {
+    fprintf(stderr, "Too many arguments, it really should be only -w or -c and a value\n");
+  }
+
+  // By default, we run both.
+  int value_idx = 1;
+  int should_run_wasm = 1;
+  int should_run_c = 1;
+  int meta = 10;
+
+  if (argc == 3) {
+    if (strcmp(argv[1], "-w") == 0) {
+      should_run_c = 0;
+    }
+    if (strcmp(argv[1], "-c") == 0) {
+      should_run_wasm = 0;
+    }
+
+    // It has to be one or the other.
+    assert(should_run_wasm == 0 || should_run_c == 0);
+    value_idx = 2;
   }
 
   // Get the parameter.
   char* endptr = NULL;
-  int value = strtol(argv[1], &endptr, 0);
+  int value = strtol(argv[value_idx], &endptr, 0);
 
   if (endptr == NULL || *endptr != '\0') {
     fprintf(stderr, "Problem with argument, should be integer %s\n", argv[1]);
@@ -62,26 +89,31 @@ int main(int argc, char** argv) {
   // Initialize the wasm module.
   wasm_llvm_init();
 
-  // First run the wasm version.
-  printf("Running wasm with %d\n", value);
+  // Always init: C part might rely on it.
   init_wasm(value);
 
-  // Let us run the wasm version a certain number of times.
-  int meta = 10;
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (i = 0; i < meta; i++) {
-    run_wasm(value);
+  // First run the wasm version.
+  if (should_run_wasm) {
+    printf("Running wasm with %d\n", value);
+    // Let us run the wasm version a certain number of times.
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (i = 0; i < meta; i++) {
+      run_wasm(value);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    print_time(&start, &end, meta);
   }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  print_time(&start, &end, meta);
 
-  printf("Running C with %d\n", value);
-  void* data = init_c(value);
-  clock_gettime(CLOCK_MONOTONIC, &start);
-  for (i = 0; i < meta; i++) {
-    run_c(data, value);
+  if (should_run_c) {
+    printf("Running C with %d\n", value);
+    void* data = init_c(value);
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for (i = 0; i < meta; i++) {
+      run_c(data, value);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    print_time(&start, &end, meta);
   }
-  clock_gettime(CLOCK_MONOTONIC, &end);
-  print_time(&start, &end, meta);
+
   return EXIT_SUCCESS;
 }
