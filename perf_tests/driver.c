@@ -30,13 +30,13 @@ int run_c(void*, int);
 int wasm_llvm_init();
 
 void print_time(struct timespec* start, struct timespec *end, int iterations) {
-  long start_s = start->tv_sec;
-  long end_s = end->tv_sec;
+  time_t start_s = start->tv_sec;
+  time_t end_s = end->tv_sec;
   long start_ns = start->tv_nsec;
   long end_ns = end->tv_nsec;
 
-  long start_time = start_s * 1000000000 + start_ns;
-  long end_time = end_s * 1000000000 + end_ns;
+  double start_time = start_s * 1000000000.0 + start_ns;
+  double end_time = end_s * 1000000000.0 + end_ns;
   double average = (end_time - start_time) / ((double) iterations);
 
   printf("Time between in average is %f\n", average);
