@@ -25,6 +25,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
 
@@ -101,7 +102,7 @@ class WasmModule {
 
     void Print() {
       std::error_code ec;
-      llvm::sys::fs::OpenFlags of;
+      llvm::sys::fs::OpenFlags of = llvm::sys::fs::OpenFlags::F_Text;
       std::ostringstream oss;
       oss << "obj/" << name_ << ".ll";
       raw_fd_ostream file(oss.str().c_str(), ec, of);
