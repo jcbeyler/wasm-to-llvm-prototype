@@ -187,7 +187,7 @@ void WasmModule::GenerateMemoryBaseFunction() {
         ptr_char_type,
         false,
         llvm::GlobalValue::CommonLinkage,
-        ConstantPointerNull::get(ptr_char_type->getPointerTo()),
+        ConstantPointerNull::get(char_type->getPointerTo()),
         GetMemoryBaseName().c_str(),
         nullptr,
         llvm::GlobalVariable::NotThreadLocal
@@ -208,7 +208,7 @@ void WasmModule::GenerateMemoryBaseFunction() {
     llvm::Value* alloc_size = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, memory_, false));
     llvm::Instruction* malloc_call = CallInst::CreateMalloc(builder.GetInsertBlock(),
         llvm::Type::getInt32Ty(llvm::getGlobalContext()),
-        ptr_char_type, alloc_size, nullptr,
+        char_type, alloc_size, nullptr,
         nullptr, "malloc");
     builder.Insert(malloc_call, "calltmp");
 
