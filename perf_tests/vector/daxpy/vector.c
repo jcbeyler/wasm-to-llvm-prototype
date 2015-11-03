@@ -35,7 +35,7 @@ void* init_vector_c(int n) {
   return wasm_module_0_memory_base;
 }
 
-int run_vector_c(void* data, int n) {
+static int multiply(void* data, int n) {
   int* tab1 = data;
   int* tab2 = tab1 + n;
 
@@ -44,5 +44,21 @@ int run_vector_c(void* data, int n) {
   for (i = 0; i < n; i++) {
     vector += tab1[i] * tab2[i];
   }
+
   return vector;
+}
+
+static void daxpy(void* data, int c, int n) {
+  int* tab1 = data;
+  int* tab2 = tab1 + n;
+  int i;
+
+  for (i = 0; i < n; i++) {
+    tab2[i] += c * tab1[i] + tab2[i];
+  }
+}
+
+int run_vector_c(void* data, int n) {
+  daxpy(data, n, n);
+  return multiply(data, n);
 }

@@ -23,15 +23,15 @@ if [ ! -e $exe ]; then
   exit 1
 fi
 
-dir="*"
+dir=`find perf_tests -name "*wast" -printf "%h\n" | sort -u`
 
 if [ $# == 1 ]; then
-  dir=$1
+  dir="perf_tests/$1"
 fi
 
-echo "Going to run perf_tests/$dir"
+echo "Going to run $dir"
 
-for name in `ls -d perf_tests/$dir`; do
+for name in $dir; do
   if [ ! -d $name ]; then
     continue
   fi
@@ -40,13 +40,12 @@ for name in `ls -d perf_tests/$dir`; do
 
   # Find the wast file.
   wast=`ls $name/*wast`
-  echo $wast
 
   if [ ! -e $wast ]; then
     echo "Skipping $wast, does not exist"
   else
     # Clean up
-    rm obj/*ll obj/*s
+    rm obj/*ll obj/*s 2> /dev/null
 
     # Build the llvm IR
     $exe $wast
