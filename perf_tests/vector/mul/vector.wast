@@ -83,4 +83,3 @@
 
 (assert_return (invoke "setter" (i32.const 1000)) (i32.const 0))
 (assert_return (invoke "vector_mul" (i32.const 1000)) (i32.const 332833500))
-
