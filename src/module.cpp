@@ -126,6 +126,9 @@ void WasmModule::Generate() {
       fct = vector_functions_[idx];
     }
 
+    if (fct == nullptr) {
+      BISON_PRINT("Handling Export: Could not find %s\n", var->GetString());
+    }
     assert(fct != nullptr);
     exported_functions[name] = fct;
 
