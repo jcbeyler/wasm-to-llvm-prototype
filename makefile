@@ -41,5 +41,5 @@ test: $(EXE)
 	wrapper/run.sh
 
 clean:
-	rm $(EXE) obj/*
+	rm -f $(EXE) obj/*
 
