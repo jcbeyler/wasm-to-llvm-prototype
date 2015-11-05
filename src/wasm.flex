@@ -17,7 +17,7 @@
 
 #include "debug.h"
 #include "enums.h"
-#include "opt.tab.hpp"
+#include "wasm.tab.hpp"
 #include "globals.h"
 
 #include <cassert>
@@ -340,6 +340,11 @@ assert_return_nan {
 assert_trap {
   LEX_DEBUG_PRINT("ASSERT TRAP\n");
   return ASSERT_TRAP_TOKEN;
+}
+
+assert_invalid {
+  LEX_DEBUG_PRINT("ASSERT INVALID\n");
+  return ASSERT_INVALID_TOKEN;
 }
 
 invoke {

@@ -109,6 +109,7 @@ std::unique_ptr<Globals> g_variables;
 %token LE LT GE GT
 %token ASSERT_RETURN_TOKEN
 %token ASSERT_TRAP_TOKEN
+%token ASSERT_INVALID_TOKEN
 %token ASSERT_RETURN_NAN_TOKEN
 %token INVOKE_TOKEN
 %token CALL_TOKEN
@@ -145,7 +146,7 @@ std::unique_ptr<Globals> g_variables;
 %type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
-%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN
+%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID
 %type<wf> FILE
 
 %%
@@ -174,7 +175,10 @@ FILE:
     // Add assertion.
     WasmAssert* a = $1;
     WasmFile* file = $2;
-    file->AddAssert(a);
+
+    if (a != nullptr) {
+      file->AddAssert(a);
+    }
 
     // Propagate this up.
     $$ = file;
@@ -611,6 +615,10 @@ ASSERT:
   } |
   ASSERT_RETURN_NAN {
     $$ = $1;
+  } |
+  ASSERT_INVALID {
+    // We pass nothing here.
+    $$ = nullptr;
   }
 
 ASSERT_RETURN_NAN:
@@ -664,36 +672,52 @@ ASSERT_RETURN:
     std::list<Expression*>* results = static_cast<std::list<Expression*>* >($8);
 
     // TODO: handle multiple returns.
-    assert(results->size() == 1);
+    assert(results->size() <= 1);
 
     Variable* var = new Variable(name);
 
     // Create the call.
     CallExpression* call = new CallExpression(var, params);
 
-    // Now get the result, we assume only 1.
-    Expression* expr = results->back();
+    if (results->size() > 0) {
+      // Now get the result, we assume only 1.
+      Expression* expr = results->back();
 
-    // Create the eq operation.
-    Operation* operation = new Operation(EQ_OPER, false);
+      // Create the eq operation.
+      Operation* operation = new Operation(EQ_OPER, false);
 
-    // Create the binop.
-    Binop* binop = new Binop(operation, call, expr);
+      // Create the binop.
+      Binop* binop = new Binop(operation, call, expr);
 
-    // Now get the result ready, it's either -1 for no problem
-    //   or the line number if there is a problem.
-    ValueHolder* vh = new ValueHolder(-1);
-    Const* success = new Const(INT_32, vh);
+      // Now get the result ready, it's either -1 for no problem
+      //   or the line number if there is a problem.
+      ValueHolder* vh = new ValueHolder(-1);
+      Const* success = new Const(INT_32, vh);
 
-    vh = new ValueHolder(g_variables->GetLineCnt());
-    Const* failure = new Const(INT_32, vh);
+      vh = new ValueHolder(g_variables->GetLineCnt());
+      Const* failure = new Const(INT_32, vh);
 
-    IfExpression* if_expr = new IfExpression(binop, success, failure);
+      IfExpression* if_expr = new IfExpression(binop, success, failure);
 
-    // Finally, return that.
-    ReturnExpression* return_expr = new ReturnExpression(if_expr);
+      // Finally, return that.
+      ReturnExpression* return_expr = new ReturnExpression(if_expr);
 
-    $$ = new WasmAssertReturn(return_expr);
+      $$ = new WasmAssertReturn(return_expr);
+    } else {
+      // No return but we want to call it so.
+      std::list<Expression*>* list = new std::list<Expression*>();
+      list->push_back(call);
+
+      // Then return -1: no problem.
+      ValueHolder* vh = new ValueHolder(-1);
+      Const* success = new Const(INT_32, vh);
+      ReturnExpression* return_expr = new ReturnExpression(success);
+      list->push_back(return_expr);
+
+      BlockExpression* block = new BlockExpression(list);
+
+      $$ = new WasmAssertReturn(block);
+    }
   }
 
 ASSERT_TRAP:
@@ -731,6 +755,16 @@ ASSERT_TRAP:
     // And create the trap with memory of the message.
     $$ = new WasmAssertTrap(block);
   }
+
+ASSERT_INVALID:
+  '('
+  ASSERT_INVALID_TOKEN
+  MODULE
+  STRING
+  ')' {
+    $$ = nullptr;
+  }
+
 %%
 
 int yyerror (const std::string& s) {

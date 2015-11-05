@@ -2,20 +2,23 @@
 ../perf_tests/vector/daxpy/vector.wast
 ../perf_tests/vector/mul/vector.wast
 ../perf_tests/sum_array/sum.wast
-float_memory.wast
-left-to-right.wast
-endianness.wast
 conversions.wast
+endianness.wast
+# Multiple definitions of the same methods block these.
+#exports.wast
 f32.wast
 f32_cmp.wast
 f64.wast
 f64_cmp.wast
 fac.wast
-# Can't yet due to multiple functions with the same names:
-# float_exprs.wast
+# Multiple definitions of the same methods block these.
+#float_exprs.wast
 float_literals.wast
+float_memory.wast
 float_misc.wast
+functions.wast
 i32.wast
 i64.wast
 int_exprs.wast
 int_literals.wast
+left-to-right.wast

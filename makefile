@@ -4,8 +4,8 @@
 
 EXE = llvm_wasm
 HEADERS = $(wildcard src/*h)
-GENERATED = obj/lex.yy.c obj/opt.tab.cpp
-GENERATED_OBJ = obj/lex.yy.o obj/opt.tab.o
+GENERATED = obj/lex.yy.c obj/wasm.tab.cpp
+GENERATED_OBJ = obj/lex.yy.o obj/wasm.tab.o
 SRC_OBJ = $(patsubst src/%.cpp, obj/%.o, $(wildcard src/*.cpp))
 
 FILES = ${HEADERS} ${SRC_OBJ} ${GENERATED}
@@ -17,19 +17,19 @@ LIBS = -ly -lfl -L/usr/lib/llvm-3.7/lib -lLLVM-3.7.0
 $(EXE): ${OBJS} $(HEADERS)
 	g++ -o $@ ${CFLAGS} ${OBJS} ${LIBS}
 
-obj/lex.yy.c: src/opt.flex obj/opt.tab.hpp $(HEADERS)
+obj/lex.yy.c: src/wasm.flex obj/wasm.tab.hpp $(HEADERS)
 	flex -o $@ $<
 
 obj/lex.yy.o: obj/lex.yy.c
 	g++ -c -o $@ $< ${CFLAGS}
 
-obj/opt.tab.o: obj/opt.tab.cpp obj/opt.tab.hpp
+obj/wasm.tab.o: obj/wasm.tab.cpp obj/wasm.tab.hpp
 	g++ -c -o $@ $< ${CFLAGS}
 
-obj/opt.tab.hpp: src/opt.ypp $(HEADERS)
-	bison --defines $< -o obj/opt.tab.cpp
+obj/wasm.tab.hpp: src/wasm.ypp $(HEADERS)
+	bison --defines $< -o obj/wasm.tab.cpp
 
-obj/opt.tab.cpp: src/opt.ypp $(HEADERS)
+obj/wasm.tab.cpp: src/wasm.ypp $(HEADERS)
 	bison --defines $< -o $@
 
 $(SRC_OBJ):obj/%.o: src/%.cpp $(HEADERS)
