@@ -17,7 +17,7 @@
 
 #include "debug.h"
 #include "enums.h"
-#include "opt.tab.hpp"
+#include "wasm.tab.hpp"
 #include "globals.h"
 
 #include <cassert>
