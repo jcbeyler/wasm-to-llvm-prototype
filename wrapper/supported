@@ -16,6 +16,7 @@ fac.wast
 float_literals.wast
 float_memory.wast
 float_misc.wast
+functions.wast
 i32.wast
 i64.wast
 int_exprs.wast
