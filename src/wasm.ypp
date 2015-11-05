@@ -109,6 +109,7 @@ std::unique_ptr<Globals> g_variables;
 %token LE LT GE GT
 %token ASSERT_RETURN_TOKEN
 %token ASSERT_TRAP_TOKEN
+%token ASSERT_INVALID_TOKEN
 %token ASSERT_RETURN_NAN_TOKEN
 %token INVOKE_TOKEN
 %token CALL_TOKEN
@@ -145,7 +146,7 @@ std::unique_ptr<Globals> g_variables;
 %type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
-%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN
+%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID
 %type<wf> FILE
 
 %%
@@ -174,7 +175,10 @@ FILE:
     // Add assertion.
     WasmAssert* a = $1;
     WasmFile* file = $2;
-    file->AddAssert(a);
+
+    if (a != nullptr) {
+      file->AddAssert(a);
+    }
 
     // Propagate this up.
     $$ = file;
@@ -611,6 +615,10 @@ ASSERT:
   } |
   ASSERT_RETURN_NAN {
     $$ = $1;
+  } |
+  ASSERT_INVALID {
+    // We pass nothing here.
+    $$ = nullptr;
   }
 
 ASSERT_RETURN_NAN:
@@ -731,6 +739,16 @@ ASSERT_TRAP:
     // And create the trap with memory of the message.
     $$ = new WasmAssertTrap(block);
   }
+
+ASSERT_INVALID:
+  '('
+  ASSERT_INVALID_TOKEN
+  MODULE
+  STRING
+  ')' {
+    $$ = nullptr;
+  }
+
 %%
 
 int yyerror (const std::string& s) {

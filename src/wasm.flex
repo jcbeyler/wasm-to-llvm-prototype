@@ -342,6 +342,11 @@ assert_trap {
   return ASSERT_TRAP_TOKEN;
 }
 
+assert_invalid {
+  LEX_DEBUG_PRINT("ASSERT INVALID\n");
+  return ASSERT_INVALID_TOKEN;
+}
+
 invoke {
   LEX_DEBUG_PRINT("INVOKE\n");
   return INVOKE_TOKEN;
