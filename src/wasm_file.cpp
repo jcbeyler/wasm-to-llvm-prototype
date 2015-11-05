@@ -56,3 +56,30 @@ void WasmFile::GenerateInitializeModules() {
 
   builder.CreateRetVoid();
 }
+
+WasmFunction* WasmFile::GetWasmFunction(const char* name, unsigned int line) {
+  // Return function if found.
+  for (auto module : modules_) {
+    // We only want modules that were defined above our own.
+    unsigned int module_line = module->GetLine();
+
+    if (module_line > line) {
+      continue;
+    }
+
+    WasmFunction* fct = module->GetWasmFunction(name, false);
+
+    if (fct != nullptr) {
+      return fct;
+    }
+  }
+
+  return nullptr;
+}
+
+void WasmFile::Initialize() {
+  // First thing is go through each module and mangle all names.
+  for (auto module : modules_) {
+    module->MangleNames(this);
+  }
+}

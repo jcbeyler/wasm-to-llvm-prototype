@@ -39,6 +39,7 @@ class WasmScriptElem {
     Expression* expr_;
     std::string name_;
     std::string mangled_name_;
+    int line_;
 
   public:
     WasmScriptElem(Expression* expr) : expr_(expr) {
@@ -54,8 +55,16 @@ class WasmScriptElem {
 
       name_ = oss.str();
 
-      mangled_name_ = "wp_";
-      mangled_name_ += name_;
+      // Currently mangled name is the same as the name.
+      mangled_name_ = name_;
+    }
+
+    void SetLine(int line) {
+      line_ = line;
+    }
+
+    int GetLine() const {
+      return line_;
     }
 
     virtual void Codegen(WasmFile* file) {

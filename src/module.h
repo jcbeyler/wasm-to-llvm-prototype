@@ -57,12 +57,21 @@ class WasmModule {
     std::map<std::string, WasmFunction*> map_functions_;
     std::vector<WasmFunction*> vector_functions_;
 
+    // Hash associations.
+    std::map<std::string, std::string> map_hash_association_;
+    std::map<std::string, std::string> map_reversed_hash_association_;
+
     std::string name_;
+    std::string hash_name_;
 
     int64_t memory_;
     int align_;
     llvm::GlobalVariable* memory_pointer_;
     llvm::Function* memory_allocator_fct_;
+
+    int line_;
+
+    WasmFunction* InternalGetWasmFunction(const char* name, bool check_file, unsigned int line) const;
 
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
@@ -73,6 +82,18 @@ class WasmModule {
         oss << "wasm_module_" << cnt;
         cnt++;
         name_ = oss.str();
+
+        std::ostringstream hash_oss;;
+        hash_oss << "wm_" << cnt << "_";
+        hash_name_ = hash_oss.str();
+    }
+
+    void SetLine(int line) {
+      line_ = line;
+    }
+
+    int GetLine() const {
+      return line_;
     }
 
     void AddFunction(WasmFunction* wf) {
@@ -124,6 +145,10 @@ class WasmModule {
       return memory_pointer_;
     }
 
+    const std::string& GetHashName() const {
+      return hash_name_;
+    }
+
     void GenerateMemoryBaseFunction();
     std::string GetMemoryBaseFunctionName() const;
     std::string GetMemoryBaseName() const;
@@ -132,11 +157,19 @@ class WasmModule {
     void Dump();
     void Initialize();
 
-    WasmFunction* GetWasmFunction(const char* name, bool check_file = true) const;
+    WasmFunction* GetWasmFunction(const char* name, bool check_file = true, unsigned int line = ~0) const;
+    WasmFunction* GetWasmFunction(const std::string& name, bool check_file = true, unsigned int line = ~0) const;
     WasmFunction* GetWasmFunction(size_t idx) const;
 
     llvm::Function* GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE type);
     llvm::Function* GetWasmAssertTrapFunction();
+
+    void MangleNames(WasmFile* file);
+    void RegisterMangle(const std::string& name, const std::string& mangled);
+    bool DoesMangledNameExist(const std::string& name) {
+      return map_reversed_hash_association_.find(name) != map_reversed_hash_association_.end();
+    }
+
 };
 
 #endif

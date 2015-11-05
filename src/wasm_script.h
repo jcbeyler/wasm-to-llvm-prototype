@@ -52,6 +52,8 @@ class WasmScript {
       // Now we want to call each of the methods.
       GenerateGeneralScriptCalls(file);
     }
+
+    void MangleNames(WasmFile* file);
 };
 
 #endif

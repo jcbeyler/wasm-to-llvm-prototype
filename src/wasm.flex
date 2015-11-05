@@ -19,20 +19,12 @@
 #include "enums.h"
 #include "wasm.tab.hpp"
 #include "globals.h"
+#include "utility.h"
 
 #include <cassert>
 
 #define LEX_DEBUG_PRINT(...) \
     DEBUG_PRINT(LEX_GROUP, LEX_VERBOSITY, __VA_ARGS__)
-
-static void RemoveDashes(char* ptr) {
-  while (*ptr) {
-    if (*ptr == '-') {
-      *ptr = '_';
-    }
-    ptr++;
-  }
-}
 
 %}
 
@@ -419,7 +411,7 @@ i64 {
   return INTEGER;
 }
 
-[-+]{0,1}0x[01][\.]{0,1}{HEX_DIGIT}*p[-+]{0,1}{DIGIT}+ {
+[-+]{0,1}0x[012][\.]{0,1}{HEX_DIGIT}*p[-+]{0,1}{DIGIT}+ {
   LEX_DEBUG_PRINT("Hexa float %s\n", yytext);
   yylval.string = strdup(yytext);
   return FLOAT;
@@ -450,12 +442,11 @@ i64 {
   return INTEGER;
 }
 
-\"[^\"]*\" {
+\"([^\"]|(\\\"))*\" {
   LEX_DEBUG_PRINT("String %s\n", yytext);
   int len = strlen(yytext);
   yytext[len - 1] = '\0';
   yylval.string = strdup(yytext + 1);
-  RemoveDashes(yylval.string);
   return STRING;
 }
 
@@ -480,7 +471,6 @@ i64 {
 ${ID} {
   LEX_DEBUG_PRINT("ID %s\n", yytext);
   yylval.string = strdup(yytext);
-  RemoveDashes(yylval.string);
   return IDENTIFIER;
 }
 

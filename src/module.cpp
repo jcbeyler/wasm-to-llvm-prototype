@@ -54,7 +54,7 @@ llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID id, ETYPE t
 }
 
 llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
-  WasmFunction* wasm_fct = GetWasmFunction("wp_assert_trap_handler", true);;
+  WasmFunction* wasm_fct = GetWasmFunction("assert_trap_handler", true);;
   llvm::Function* fct;
 
   if (wasm_fct == nullptr) {
@@ -72,7 +72,7 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
     // Finally create the actual function type: int foo (char* (*)()).
     llvm::FunctionType* ft = FunctionType::get(llvm::Type::getInt32Ty(getGlobalContext()), params, false);
 
-    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "wp_assert_trap_handler", module_);
+    fct = llvm::Function::Create(ft, Function::ExternalLinkage, "assert_trap_handler", module_);
 
     wasm_fct = new WasmFunction(nullptr, fct->getName(), fct, this, INT_32);
 
@@ -119,7 +119,7 @@ void WasmModule::Generate() {
 
     WasmFunction* fct = nullptr;
     if (var->IsString()) {
-      fct = map_functions_[var->GetString()];
+      fct = GetWasmFunction(var->GetString(), false);
     } else {
       size_t idx = var->GetIdx();
       assert(idx < vector_functions_.size());
@@ -131,11 +131,6 @@ void WasmModule::Generate() {
     }
     assert(fct != nullptr);
     exported_functions[name] = fct;
-
-    // Update name.
-    fct->SetName(name.c_str());
-    llvm::Function* llvm_fct = fct->GetFunction();
-    llvm_fct->setName(name);
   }
 
   // Clear the old map and the vector functions.
@@ -250,7 +245,39 @@ void WasmModule::Dump() {
   }
 }
 
-WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file) const {
+void WasmModule::RegisterMangle(const std::string& name, const std::string& hashed) {
+  assert(map_hash_association_.find(name) == map_hash_association_.end());
+  assert(map_reversed_hash_association_.find(hashed) == map_reversed_hash_association_.end());
+ 
+  map_hash_association_[name] = hashed; 
+  map_reversed_hash_association_[hashed] = name; 
+}
+
+WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file, unsigned int line) const {
+  WasmFunction* fct = InternalGetWasmFunction(name, check_file, line);
+
+  if (fct == nullptr) {
+    // Get the mangled name instead.
+    auto iter = map_hash_association_.find(name);
+
+    if (iter != map_hash_association_.end()) {
+      fct = InternalGetWasmFunction(iter->second.c_str(), check_file, line);
+    }
+
+    if (fct == nullptr) {
+      // Finally, it could be reversed that would solve it.
+      auto iter = map_reversed_hash_association_.find(name);
+
+      if (iter != map_reversed_hash_association_.end()) {
+        fct = InternalGetWasmFunction(iter->second.c_str(), check_file, line);
+      }
+    }
+  }
+
+  return fct;
+}
+
+WasmFunction* WasmModule::InternalGetWasmFunction(const char* name, bool check_file, unsigned int line) const {
   // First look in our module.
   std::map<std::string, WasmFunction*>::const_iterator it = map_functions_.find(name);
   WasmFunction* fct = nullptr;
@@ -264,7 +291,7 @@ WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file) con
     // Then call it.
     if (check_file == true) {
       if (file_ != nullptr) {
-        fct = file_->GetWasmFunction(name);
+        fct = file_->GetWasmFunction(name, line);
       }
 
       // If it does not exist in our module, let us create a prototype.
@@ -272,11 +299,16 @@ WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file) con
         llvm::Function* llvm_fct = fct->GetFunction();
         llvm::FunctionType* ft = llvm_fct->getFunctionType();
 
-        Function::Create(ft, llvm::Function::ExternalLinkage, name, module_);
+        Function::Create(ft, llvm::Function::ExternalLinkage, fct->GetName(), module_);
       }
     }
   }
 
+  return fct;
+}
+
+WasmFunction* WasmModule::GetWasmFunction(const std::string& name, bool check_file, unsigned int line) const {
+  WasmFunction* fct = GetWasmFunction(name.c_str(), check_file, line);
   return fct;
 }
 
@@ -287,3 +319,13 @@ WasmFunction* WasmModule::GetWasmFunction(size_t idx) const {
 
   return nullptr;
 }
+
+void WasmModule::MangleNames(WasmFile* file) {
+  // For each function, mangle its names.
+  for (auto it : functions_) {
+    WasmFunction& fct = *it;
+
+    fct.MangleNames(file, this);
+  }
+}
+

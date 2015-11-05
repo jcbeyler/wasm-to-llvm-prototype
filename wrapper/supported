@@ -4,8 +4,7 @@
 ../perf_tests/sum_array/sum.wast
 conversions.wast
 endianness.wast
-# Still have an issue for exports.wast: multiple names.
-# exports.wast
+exports.wast
 f32.wast
 f32_cmp.wast
 f64.wast
@@ -22,3 +21,4 @@ int_exprs.wast
 int_literals.wast
 left-to-right.wast
 memory_redundancy.wast
+names.wast

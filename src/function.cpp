@@ -299,3 +299,68 @@ llvm::BasicBlock* WasmFunction::GetLabel(const char* name) {
 
   return nullptr;
 }
+
+void WasmFunction::MangleNames(WasmFile* file, WasmModule* module) {
+  // First mangle the function name.
+  MangleFunctionName(file, module);
+}
+
+void WasmFunction::MangleFunctionName(WasmFile* file, WasmModule* module) {
+  std::ostringstream oss;
+
+  // We start by mangling it using the module hash.
+  const std::string& hash = module->GetHashName();
+  oss << hash << "_";
+
+  // Then we get the function's name.
+  oss << name_;
+
+  // Get the string of this.
+  std::string s = oss.str();
+
+  std::string end_name = "";
+  bool last_was_underscore = false;
+  for (char c : s) {
+    // Basically, we accept lower case letters.
+    if (c >= 'a' && c <= 'z') {
+      end_name += c;
+      last_was_underscore = false;
+      continue;
+    }
+
+    // And upper case.
+    if (c >= 'A' && c <= 'Z') {
+      end_name += c;
+      last_was_underscore = false;
+      continue;
+    }
+
+    // And digits.
+    if (c >= '0' && c <= '9') {
+      end_name += c;
+      last_was_underscore = false;
+      continue;
+    }
+
+    // And any other character becomes an underscore but only put one in a row.
+    if (last_was_underscore == false) {
+      end_name += '_';
+      last_was_underscore = true;
+      continue;
+    }
+  }
+
+  // Check if it is not in the module already,
+  //   no need to check the file since we have the module prefix.
+  while (module->DoesMangledNameExist(end_name) == true) {
+    // Now we add a random letter character until the name is unique.
+    char c = 'a' + rand() % 26;
+    end_name += c;
+  }
+
+  // Now we have a unique method, register it.
+  module->RegisterMangle(name_, end_name);
+
+  // Now mangle it.
+  name_ = end_name;
+}

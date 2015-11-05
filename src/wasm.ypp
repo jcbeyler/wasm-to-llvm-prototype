@@ -147,7 +147,7 @@ std::unique_ptr<Globals> g_variables;
 %type<op> WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET CONVERSION
 %type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
-%type<string> FLOAT
+%type<string> FLOAT 
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
@@ -181,6 +181,7 @@ FILE:
     WasmFile* file = $2;
 
     if (wse != nullptr) {
+      // We want the file to know about the script request.
       file->AddScriptElem(wse);
     }
 
@@ -200,13 +201,16 @@ SCRIPT_INVOKE:
    Variable* var = new Variable(name);
 
    // Create the call.
-   $$ = new CallExpression(var, params);
+   CallExpression* call  = new CallExpression(var, params);
+   call->SetLine(g_variables->GetLineCnt());
+   $$ = call;
   }
 
 SCRIPT_ELEM:
   ASSERT { $$ = $1; } |
   SCRIPT_INVOKE {
    $$ = new WasmInvoke($1);
+   $$->SetLine(g_variables->GetLineCnt());
   }
 
 MODULE:
@@ -240,7 +244,11 @@ MODULE_ELEMS:
     module->AddMemory($3, $4);
     $$ = module;
   } | {
-    $$ = new WasmModule();
+    WasmModule* wm = new WasmModule();
+
+    wm->SetLine(g_variables->GetLineCnt());
+
+    $$ = wm;
   }
 
 EXPORT: '('
@@ -249,12 +257,8 @@ EXPORT: '('
     VARIABLE
     ')' {
       // Handle name mangling.
-      std::string s = AddWasmFunctionPrefix($3);
+      std::string s = $3;
       Variable* var = $4;
-
-      if (var->IsString()) {
-        var->SetString(AddWasmFunctionPrefix(var->GetString()));
-      }
 
       WasmExport* exp = new WasmExport(s, var);
       $$ = exp;
@@ -330,11 +334,12 @@ FUNCTION: '('
       WasmFunction* f = nullptr;
 
       // Handle name mangling.
-      char* name = AddWasmFunctionPrefix($3);
+      const char* id = $3;
+
       std::list<FunctionField*>* fields = static_cast<std::list<FunctionField*>* >($4);
 
-      if (name != nullptr) {
-        f = new WasmFunction(fields, name);
+      if (id != nullptr) {
+        f = new WasmFunction(fields, id);
       } else {
         f = new WasmFunction(fields);
       }
@@ -469,7 +474,11 @@ CALL:
   CALL_TOKEN VARIABLE EXPRESSIONS {
     Variable* var = $2;
     std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
-    $$ = new CallExpression(var, list);
+    CallExpression* call = new CallExpression(var, list);
+
+    call->SetLine(g_variables->GetLineCnt());
+
+    $$ = call;
   }
 
 VALUE:
@@ -625,12 +634,15 @@ RESULT: RESULT_TOKEN TYPE { $$ = $2; }
 ASSERT:
   ASSERT_RETURN {
     $$ = $1;
+    $$->SetLine(g_variables->GetLineCnt());
   } |
   ASSERT_TRAP {
     $$ = $1;
+    $$->SetLine(g_variables->GetLineCnt());
   } |
   ASSERT_RETURN_NAN {
     $$ = $1;
+    $$->SetLine(g_variables->GetLineCnt());
   } |
   ASSERT_INVALID {
     // We pass nothing here.
@@ -640,14 +652,10 @@ ASSERT:
 ASSERT_RETURN_NAN:
   '('
   ASSERT_RETURN_NAN_TOKEN
-    '(' INVOKE_TOKEN STRING EXPRESSIONS ')' ')' {
-      char* name = $5;
-      std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
-
-      Variable* var = new Variable(name);
-
+    SCRIPT_INVOKE 
+   ')' {
       // Create the call.
-      CallExpression* call = new CallExpression(var, params);
+      CallExpression* call = $3;
 
       // Create the eq operation.
       Operation* operation = new Operation(EQ_OPER, false, VOID);

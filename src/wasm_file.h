@@ -67,7 +67,11 @@ class WasmFile {
       }
     }
 
+    void Initialize();
+
     void Generate() {
+      Initialize();
+
       for (auto module : modules_) {
         module->Generate();
       }
@@ -79,23 +83,12 @@ class WasmFile {
 
     void GenerateInitializeModules();
 
-    WasmFunction* GetWasmFunction(const char* name) {
+    WasmFunction* GetWasmFunction(const char* name, unsigned int line = ~0);
+
+    llvm::Function* GetFunction(const char* name, unsigned int line = ~0) {
       // Return function if found.
       for (auto module : modules_) {
-        WasmFunction* fct = module->GetWasmFunction(name, false);
-
-        if (fct != nullptr) {
-          return fct;
-        }
-      }
-
-      return nullptr;
-    }
-
-    llvm::Function* GetFunction(const char* name) {
-      // Return function if found.
-      for (auto module : modules_) {
-        WasmFunction* fct = module->GetWasmFunction(name, false);
+        WasmFunction* fct = module->GetWasmFunction(name, false, line);
 
         if (fct != nullptr) {
           return fct->GetFunction();

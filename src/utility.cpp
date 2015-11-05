@@ -345,9 +345,3 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
   return VOID;
 }
 
-char* AddWasmFunctionPrefix(const char* s) {
-  const char* prefix = "wp_";
-  std::ostringstream oss;
-  oss << prefix << s;
-  return strdup(oss.str().c_str());
-}

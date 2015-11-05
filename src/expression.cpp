@@ -91,7 +91,9 @@ WasmFunction* CallExpression::GetCallee(WasmFunction* fct) const {
 
   if (call_id_->IsString()) {
     const char* name = call_id_->GetString();
-    wfct = module->GetWasmFunction(name);
+
+    // Line number is needed here in case we are going outside of the module.
+    wfct = module->GetWasmFunction(name, true, line_);
   } else {
     size_t idx = call_id_->GetIdx();
     wfct  = module->GetWasmFunction(idx);

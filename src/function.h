@@ -30,7 +30,8 @@
 
 using namespace llvm;
 
-// Forward declaration.
+// Forward declarations.
+class WasmFile;
 class WasmModule;
 
 /**
@@ -61,7 +62,7 @@ class WasmFunction {
     void GetBaseMemory(llvm::IRBuilder<>& builder);
 
   public:
-    WasmFunction(std::list<FunctionField*>* f = nullptr, const std::string& s = "$anonymous",
+    WasmFunction(std::list<FunctionField*>* f = nullptr, const std::string& s = "anonymous",
                  llvm::Function* fct = nullptr, WasmModule* module = nullptr, ETYPE result = VOID) :
       name_(s), fct_(fct), module_(module), fields_(f), result_(result), local_base_(nullptr) {
         // If anonymous, let's add a unique suffix.
@@ -94,7 +95,7 @@ class WasmFunction {
     }
 
     void Dump(int tabs = 0) const {
-      BISON_TABBED_PRINT(tabs, "Function is name_d %s\n", name_.c_str());
+      BISON_TABBED_PRINT(tabs, "Function is named %s\n", name_.c_str());
 
       if (fields_) {
         for (std::list<FunctionField*>::const_iterator iter = fields_->begin();
@@ -144,6 +145,8 @@ class WasmFunction {
     llvm::Type* GetReturnType() const;
     llvm::Value* HandleReturn(llvm::Value* result, llvm::IRBuilder<>& builder) const;
 
+    void MangleNames(WasmFile* file, WasmModule* module);
+    void MangleFunctionName(WasmFile* file, WasmModule* module);
 };
 
 #endif

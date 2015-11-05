@@ -22,7 +22,12 @@ static CallExpression* HandleInvoke(WasmModule* wasm_module, WasmScriptElem* ele
 
   // Generate the call.
   Variable* id = new Variable(name.c_str());
-  return new CallExpression(id);
+
+  // We also want the line number for this call.
+  CallExpression* call = new CallExpression(id);
+  call->SetLine(elem->GetLine());
+
+  return call;
 }
 
 static CallExpression* HandleAssert(WasmModule* wasm_module, WasmScriptElem* elem) {
