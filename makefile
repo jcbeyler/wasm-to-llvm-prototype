@@ -37,8 +37,14 @@ obj/wasm.tab.cpp: src/wasm.ypp $(HEADERS)
 $(SRC_OBJ):obj/%.o: src/%.cpp $(HEADERS)
 	g++ -c -o $@ $< ${CFLAGS}
 
+perf-test: $(EXE)
+	perf_tests/run.sh
+
 test: $(EXE)
 	wrapper/run.sh
+
+update-modules:
+	git submodule foreach git pull origin master
 
 clean:
 	rm -f $(EXE) obj/*

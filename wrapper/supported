@@ -1,19 +1,17 @@
-memory_redundancy.wast
 ../perf_tests/matrix/mul/mul.wast
 ../perf_tests/vector/daxpy/vector.wast
 ../perf_tests/vector/mul/vector.wast
 ../perf_tests/sum_array/sum.wast
 conversions.wast
 endianness.wast
-# Multiple definitions of the same methods block these.
-#exports.wast
+# Still have an issue for exports.wast: multiple names.
+# exports.wast
 f32.wast
 f32_cmp.wast
 f64.wast
 f64_cmp.wast
 fac.wast
-# Multiple definitions of the same methods block these.
-#float_exprs.wast
+float_exprs.wast
 float_literals.wast
 float_memory.wast
 float_misc.wast
@@ -23,3 +21,4 @@ i64.wast
 int_exprs.wast
 int_literals.wast
 left-to-right.wast
+memory_redundancy.wast
