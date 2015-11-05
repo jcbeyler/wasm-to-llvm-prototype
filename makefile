@@ -11,8 +11,10 @@ SRC_OBJ = $(patsubst src/%.cpp, obj/%.o, $(wildcard src/*.cpp))
 FILES = ${HEADERS} ${SRC_OBJ} ${GENERATED}
 OBJS = $(SRC_OBJ) $(GENERATED_OBJ)
 
-CFLAGS = -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++0x -Isrc
-LIBS = -ly -lfl -L/usr/lib/llvm-3.7/lib -lLLVM-3.7.0
+INCLUDEDIR = `llvm-config --includedir`
+CFLAGS = -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++0x -Isrc -I$(INCLUDEDIR)
+LIBDIR = `llvm-config --libdir`
+LIBS = -ly -lfl -L$(LIBDIR) -lLLVM
 
 $(EXE): ${OBJS} $(HEADERS)
 	g++ -o $@ ${CFLAGS} ${OBJS} ${LIBS}
