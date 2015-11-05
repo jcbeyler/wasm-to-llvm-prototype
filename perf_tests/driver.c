@@ -87,10 +87,14 @@ int main(int argc, char** argv) {
   }
 
   // Initialize the wasm module.
+  fprintf(stderr, "Initialization of the wasm module\n");
   wasm_llvm_init();
 
   // Always init: C part might rely on it.
+  fprintf(stderr, "Call the Wasm Test Initialization\n");
   init_wasm(value);
+
+  fprintf(stderr, "Initialization done\n");
 
   // First run the wasm version.
   if (should_run_wasm) {

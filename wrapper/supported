@@ -1,4 +1,6 @@
-../perf_tests/vector/vector.wast
+../perf_tests/matrix/mul/mul.wast
+../perf_tests/vector/daxpy/vector.wast
+../perf_tests/vector/mul/vector.wast
 ../perf_tests/sum_array/sum.wast
 float_memory.wast
 left-to-right.wast

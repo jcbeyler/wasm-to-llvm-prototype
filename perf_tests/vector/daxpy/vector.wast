@@ -89,4 +89,4 @@
 
 (assert_return (invoke "setter" (i32.const 1000)) (i32.const 0))
 (assert_return (invoke "daxpy" (i32.const 2) (i32.const 1000)) (i32.const 0))
-(assert_return (invoke "getter" (i32.const 0)) (i32.const 2))
+(assert_return (invoke "getter" (i32.const 4)) (i32.const 3))
