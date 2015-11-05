@@ -16,7 +16,12 @@
 
 echo "Running tests"
 
-list=`cat wrapper/supported | grep -v '#'`
+if [ $# -eq 0 ]; then
+  list=`cat wrapper/supported | grep -v '#'`
+else
+  list="$@"
+fi
+
 echo "Test list is:"
 echo $list
 
