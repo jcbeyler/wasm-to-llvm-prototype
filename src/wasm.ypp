@@ -33,8 +33,8 @@
 #include "module.h"
 #include "operation.h"
 #include "simple.h"
-#include "wasm_assert.h"
-#include "wasm_asserts.h"
+#include "wasm_script.h"
+#include "wasm_script_elem.h"
 #include "wasm_file.h"
 
 extern int yyerror (const std::string& s);
@@ -45,6 +45,7 @@ std::unique_ptr<Globals> g_variables;
 %}
 
 %code requires {
+  class CallExpression;
   class ConversionOperation;
   class Expression;
   enum ETYPE;
@@ -57,12 +58,12 @@ std::unique_ptr<Globals> g_variables;
   class Store;
   class ValueHolder;
   class Variable;
-  class WasmAssert;
-  class WasmAsserts;
   class WasmExport;
   class WasmFile;
   class WasmFunction;
   class WasmModule;
+  class WasmScript;
+  class WasmScriptElem;
 
 #include <memory>
   extern std::unique_ptr<Globals> g_variables;
@@ -75,6 +76,7 @@ std::unique_ptr<Globals> g_variables;
   char* string;
   void* voidptr;
 
+  CallExpression* ce;
   ConversionOperation* co;
   WasmExport* e;
   ETYPE et;
@@ -89,7 +91,8 @@ std::unique_ptr<Globals> g_variables;
   Store* st;
   Variable* v;
   ValueHolder* vh;
-  WasmAssert* wa;
+  WasmScript* ws;
+  WasmScriptElem* wse;
   WasmFile* wf;
 }
 
@@ -122,6 +125,7 @@ std::unique_ptr<Globals> g_variables;
 %type<voidptr> EXPRESSIONS
 
 %type<b> SIGN
+%type<ce> SCRIPT_INVOKE
 %type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
 %type<et> TYPE
@@ -146,7 +150,7 @@ std::unique_ptr<Globals> g_variables;
 %type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
-%type<wa> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID
+%type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
 %type<wf> FILE
 
 %%
@@ -171,13 +175,13 @@ FILE:
     // Propagate this up.
     $$ = file;
   } |
-  ASSERT FILE {
-    // Add assertion.
-    WasmAssert* a = $1;
+  SCRIPT_ELEM FILE {
+    // Add a script element.
+    WasmScriptElem* wse = $1;
     WasmFile* file = $2;
 
-    if (a != nullptr) {
-      file->AddAssert(a);
+    if (wse != nullptr) {
+      file->AddScriptElem(wse);
     }
 
     // Propagate this up.
@@ -186,6 +190,23 @@ FILE:
     // Create the file now.
     WasmFile* file = new WasmFile();
     $$ = file;
+  }
+
+SCRIPT_INVOKE:
+  '(' INVOKE_TOKEN STRING EXPRESSIONS ')' {
+   char* name = $3;
+   std::list<Expression*>* params = static_cast<std::list<Expression*>* >($4);
+
+   Variable* var = new Variable(name);
+
+   // Create the call.
+   $$ = new CallExpression(var, params);
+  }
+
+SCRIPT_ELEM:
+  ASSERT { $$ = $1; } |
+  SCRIPT_INVOKE {
+   $$ = new WasmInvoke($1);
   }
 
 MODULE:
@@ -601,11 +622,6 @@ PARAM:
 
 RESULT: RESULT_TOKEN TYPE { $$ = $2; }
 
-/*
- * Ignoring the asserts for now, we really just want to compile the functions
- * but want to be compatible with the example files in the ml-proto project.
- */
-
 ASSERT:
   ASSERT_RETURN {
     $$ = $1;
@@ -663,21 +679,17 @@ ASSERT_RETURN_NAN:
 ASSERT_RETURN:
   '('
   ASSERT_RETURN_TOKEN
-    '(' INVOKE_TOKEN STRING EXPRESSIONS ')'
+    SCRIPT_INVOKE
     EXPRESSIONS
   ')' {
     // Let's just create the IR that calls and compares the call and the expected result.
-    char* name = $5;
-    std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
-    std::list<Expression*>* results = static_cast<std::list<Expression*>* >($8);
+    std::list<Expression*>* results = static_cast<std::list<Expression*>* >($4);
 
     // TODO: handle multiple returns.
     assert(results->size() <= 1);
 
-    Variable* var = new Variable(name);
-
-    // Create the call.
-    CallExpression* call = new CallExpression(var, params);
+    // Get the call.
+    CallExpression* call = $3;
 
     if (results->size() > 0) {
       // Now get the result, we assume only 1.
@@ -723,22 +735,18 @@ ASSERT_RETURN:
 ASSERT_TRAP:
   '('
   ASSERT_TRAP_TOKEN
-    '(' INVOKE_TOKEN STRING EXPRESSIONS ')' STRING
+    SCRIPT_INVOKE STRING
   ')' {
     // Trap is a bit more complex: call the wrapper that we have to ensure it "traps".
     //  We want to do:
     //    Call the trapping call.
     //    Return the pointer to the string (should not be reached).
-    char* error_msg = $8;
-    char* name = $5;
-    std::list<Expression*>* params = static_cast<std::list<Expression*>* >($6);
-
-    Variable* var = new Variable(name);
+    char* error_msg = $4;
 
     std::list<Expression*>* list = new std::list<Expression*>();
 
-    // Create the call that will trap.
-    CallExpression* call = new CallExpression(var, params);
+    // Get the call that will trap.
+    CallExpression* call = $3;
 
     list->push_back(call);
 

@@ -26,7 +26,7 @@
 
 extern "C" {
   jmp_buf env;
-  int execute_asserts(void);
+  int execute_script(void);
   void wasm_llvm_init(void);
 
   void fpe_handler(int arg) {
@@ -79,13 +79,13 @@ int main(void) {
   // Call the glue first.
   wasm_llvm_init();
 
-  res = execute_asserts();
+  res = execute_script();
 
   if (res == -1) {
     return EXIT_SUCCESS;
-    fprintf(stderr, "Executed assertion, success\n");
+    fprintf(stderr, "Executed script, success\n");
   } else {
-    fprintf(stderr, "Executed assertion, failure for assertion line %d\n", res);
+    fprintf(stderr, "Executed script, failure for assertion line %d\n", res);
     return EXIT_FAILURE;
   }
 }

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef H_WASM_ASSERT
-#define H_WASM_ASSERT
+#ifndef H_WASM_SCRIPT_ELEM
+#define H_WASM_SCRIPT_ELEM
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/Passes.h"
@@ -34,18 +34,18 @@
 // Forward declaration.
 class WasmFile;
 
-class WasmAssert {
+class WasmScriptElem {
   protected:
     Expression* expr_;
     std::string name_;
     std::string mangled_name_;
 
   public:
-    WasmAssert(Expression* expr) : expr_(expr) {
+    WasmScriptElem(Expression* expr) : expr_(expr) {
       // Asserts really don't have names but we will want one to call these.
       static int cnt = 0;
       std::ostringstream oss;
-      oss << "wasm_assert_";
+      oss << "wasm_script_elem_";
 
       // Finally, add the counter.
       oss << cnt;
@@ -59,7 +59,7 @@ class WasmAssert {
     }
 
     virtual void Codegen(WasmFile* file) {
-      BISON_PRINT("No codegen for this assert: %s\n", name_.c_str());
+      BISON_PRINT("No codegen for this script element: %s\n", name_.c_str());
     }
 
     virtual void Dump(int tabs = 0) const {
@@ -79,9 +79,17 @@ class WasmAssert {
     }
 };
 
-class WasmAssertReturn : public WasmAssert {
+class WasmAssertReturn : public WasmScriptElem {
   public:
-    WasmAssertReturn(Expression* expr) : WasmAssert(expr) {
+    WasmAssertReturn(Expression* expr) : WasmScriptElem(expr) {
+    }
+
+    virtual void Codegen(WasmFile* file);
+};
+
+class WasmInvoke : public WasmScriptElem {
+  public:
+    WasmInvoke(Expression* expr) : WasmScriptElem(expr) {
     }
 
     virtual void Codegen(WasmFile* file);
@@ -95,13 +103,13 @@ class WasmAssertReturnNan : public WasmAssertReturn {
     virtual void Codegen(WasmFile* file);
 };
 
-class WasmAssertTrap : public WasmAssert {
+class WasmAssertTrap : public WasmScriptElem {
   protected:
     std::string error_msg_;
 
   public:
     WasmAssertTrap(Expression* expr) :
-      WasmAssert(expr) {
+      WasmScriptElem(expr) {
     }
 
     virtual void Codegen(WasmFile* file);

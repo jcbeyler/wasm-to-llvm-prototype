@@ -18,18 +18,17 @@
 
 #include "function.h"
 #include "module.h"
-#include "wasm_asserts.h"
-#include "wasm_assert.h"
+#include "wasm_script.h"
 
 class WasmFile {
   protected:
-    WasmAsserts asserts_;
+    WasmScript script_;
     std::vector<WasmModule*> modules_;
-    WasmModule* assert_module_;
+    WasmModule* script_module_;
     WasmModule* glue_module_;
 
   public:
-    WasmFile() : assert_module_(nullptr) {
+    WasmFile() : script_module_(nullptr) {
     }
 
     void AddModule(WasmModule* module) {
@@ -38,8 +37,8 @@ class WasmFile {
       module->SetWasmFile(this);
     }
 
-    void AddAssert(WasmAssert* a) {
-      asserts_.AddAssert(a);
+    void AddScriptElem(WasmScriptElem* wse) {
+      script_.AddScriptElem(wse);
     }
 
     void Print() {
@@ -47,8 +46,8 @@ class WasmFile {
         module->Print();
       }
 
-      if (assert_module_ != nullptr) {
-        assert_module_->Print();
+      if (script_module_ != nullptr) {
+        script_module_->Print();
       }
 
       if (glue_module_ != nullptr) {
@@ -61,10 +60,10 @@ class WasmFile {
         module->Dump();
       }
 
-      asserts_.Dump();
+      script_.Dump();
 
-      if (assert_module_ != nullptr) {
-        assert_module_->Dump();
+      if (script_module_ != nullptr) {
+        script_module_->Dump();
       }
     }
 
@@ -73,7 +72,7 @@ class WasmFile {
         module->Generate();
       }
 
-      asserts_.Generate(this);
+      script_.Generate(this);
 
       GenerateInitializeModules();
     }
@@ -107,12 +106,12 @@ class WasmFile {
     }
 
     WasmModule* GetAssertModule() {
-      if (assert_module_ == nullptr) {
+      if (script_module_ == nullptr) {
         llvm::Module* module =
-          new llvm::Module("WasmAssertModule", llvm::getGlobalContext());
-        assert_module_ = new WasmModule(module, nullptr, this);
+          new llvm::Module("WasmScriptModule", llvm::getGlobalContext());
+        script_module_ = new WasmModule(module, nullptr, this);
       }
-      return assert_module_;
+      return script_module_;
     }
 
     llvm::Module* GetIntrinsicModule() {
