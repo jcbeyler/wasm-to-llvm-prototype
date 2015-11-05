@@ -13,44 +13,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef H_WASMASSERTS
-#define H_WASMASSERTS
+#ifndef H_WASM_SCRIPT
+#define H_WASM_SCRIPT
 
 #include <deque>
 
-#include "wasm_assert.h"
+#include "wasm_script_elem.h"
 
 // Forward declaration.
-class WasmAssert;
+class WasmScriptElem;
 class WasmFile;
 
-class WasmAsserts {
+class WasmScript {
   protected:
-    std::deque<WasmAssert*> asserts_;
+    std::deque<WasmScriptElem*> script_elems_;
 
   public:
-    WasmAsserts() {
+    WasmScript() {
     }
 
-    void AddAssert(WasmAssert* a) {
-      asserts_.push_front(a);
+    void AddScriptElem(WasmScriptElem* a) {
+      script_elems_.push_front(a);
     }
 
     void Dump() const {
-      for(auto elem : asserts_) {
+      for(auto elem : script_elems_) {
         elem->Dump();
       }
     }
 
-    void GenerateGeneralAssertCalls(WasmFile* file);
+    void GenerateGeneralScriptCalls(WasmFile* file);
 
     void Generate(WasmFile* file) {
-      for(auto elem : asserts_) {
+      for(auto elem : script_elems_) {
         elem->Codegen(file);
       }
 
       // Now we want to call each of the methods.
-      GenerateGeneralAssertCalls(file);
+      GenerateGeneralScriptCalls(file);
     }
 };
 

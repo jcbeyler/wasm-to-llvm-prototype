@@ -21,7 +21,7 @@
 #include "llvm/IR/Intrinsics.h"
 
 #include "binop.h"
-#include "wasm_assert.h"
+#include "wasm_script_elem.h"
 #include "wasm_file.h"
 
 void WasmAssertReturnNan::Codegen(WasmFile* file) {
@@ -61,9 +61,37 @@ void WasmAssertReturnNan::Codegen(WasmFile* file) {
   WasmAssertReturn::Codegen(file);
 }
 
+void WasmInvoke::Codegen(WasmFile* file) {
+  // This method has no parameters.
+  std::vector<llvm::Type*> params;
+
+  // Then get the result: void.
+  llvm::Type* result_type = llvm::Type::getVoidTy(llvm::getGlobalContext());
+  WasmModule* wasm_module = file->GetAssertModule();
+  llvm::Module* module = wasm_module->GetModule();
+
+  // Finally, create the function type.
+  llvm::FunctionType* fct_type = llvm::FunctionType::get(result_type, params, false);
+  llvm::Function* fct = llvm::Function::Create(fct_type, Function::ExternalLinkage, mangled_name_, module);
+
+  // Now create the first bb.
+  llvm::BasicBlock* bb = llvm::BasicBlock::Create(getGlobalContext(), "entry", fct);
+  llvm::IRBuilder<> builder(getGlobalContext());
+  builder.SetInsertPoint(bb);
+
+  WasmFunction* wasm_fct = new WasmFunction(nullptr, fct->getName(), fct, wasm_module, VOID);
+
+  wasm_module->AddFunctionAndRegister(wasm_fct);
+
+  expr_->Codegen(wasm_fct, builder);
+
+  // Invoke from scripts have no return, so let's add a return void. Assertions below have that
+  builder.CreateRetVoid();
+}
+
 void WasmAssertReturn::Codegen(WasmFile* file) {
-  // Now generate this function prototype: assert_eq is always the same:
-    // Returns a boolean (is the invoke result equal to the expected one.
+  // Now generate this function prototype: assert_ereturn is always the same:
+    // Returns an integer (-1 is success, the line number if failure)
 
   // This method has no parameters.
   std::vector<llvm::Type*> params;
