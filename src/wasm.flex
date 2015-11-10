@@ -269,6 +269,11 @@ if {
   return IF;
 }
 
+if_else {
+  LEX_DEBUG_PRINT("IF ELSE\n");
+  return IF_ELSE;
+}
+
 loop {
   LEX_DEBUG_PRINT("LOOP\n");
   return LOOP;
@@ -279,7 +284,7 @@ export {
   return EXPORT_TOKEN;
 }
 
-break {
+br {
   LEX_DEBUG_PRINT("BREAK\n");
   return BREAK_TOKEN;
 }
@@ -423,8 +428,20 @@ i64 {
   return FLOAT;
 }
 
-[-+]{0,1}nan\(0x{HEX_DIGIT}+\) {
-  yylval.string = strdup(yytext);
+[-+]{0,1}nan:0x{HEX_DIGIT}+ {
+  // Recreate the one that strtof and strtod prefer.
+
+  // +2 because we want a ')' too.
+  char* new_string = new char[strlen(yytext) + 2];
+  strcpy(new_string, yytext);
+
+  char* colon = strchr(new_string, ':');
+  assert(colon != nullptr);
+  *colon = '(';
+
+  strcat(new_string, ")");
+
+  yylval.string = new_string;
   return FLOAT;
 }
 

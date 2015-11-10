@@ -31,9 +31,9 @@
      (set_local 1 (i32.const 0))
     (label
       (loop
-        (if
+        (if_else
           (i32.eq (get_local 0) (i32.const 0))
-          (break 0)
+          (br 1)
           (block
             (i32.store (i32.mul (get_local 1) (i32.const 4)) (get_local 1))
             (set_local 1 (i32.add (get_local 1) (i32.const 1)))
@@ -60,9 +60,9 @@
 
     (label
       (loop
-        (if
+        (if_else
           (i32.eq (get_local 2) (i32.const 0))
-          (break 0)
+          (br 1)
           (block
             (set_local 1 (i32.add (get_local 1) (i32.load (get_local 2))))
             (set_local 2 (i32.sub (get_local 2) (i32.const 4)))

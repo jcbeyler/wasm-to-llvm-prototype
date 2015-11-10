@@ -244,7 +244,11 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   llvm::BasicBlock* preheader = builder.GetInsertBlock();
 
   // The other two will wait before being emitted.
-  llvm::BasicBlock* loop = BasicBlock::Create(llvm::getGlobalContext(), "loop", fct->GetFunction());
+  const char* name = (var_ != nullptr) ? var_->GetString() : "loop_block";
+  llvm::BasicBlock* loop = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
+
+  // Push it.
+  fct->PushLabel(loop);
 
   // Jump to the loop.
   builder.CreateBr(loop);
@@ -252,7 +256,13 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   // Now we are in the loop.
   builder.SetInsertPoint(loop);
 
-  llvm::Value* value = loop_->Codegen(fct, builder);
+  llvm::Value* value = nullptr;
+  for(std::list<Expression*>::iterator it = loop_->begin();
+      it != loop_->end();
+      it++) {
+    Expression* expr = *it;
+    value = expr->Codegen(fct, builder);
+  }
 
   // Create the unconditional branch back to the start.
   builder.CreateBr(loop);
@@ -261,6 +271,7 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   BasicBlock* label_dc = BasicBlock::Create(llvm::getGlobalContext(), "label_dc ", fct->GetFunction());
   builder.SetInsertPoint(label_dc);
 
+  fct->PopLabel();
 
   // All is good :).
   return value;

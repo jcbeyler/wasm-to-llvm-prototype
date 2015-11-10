@@ -24,7 +24,7 @@ extern void* wasm_module_0_memory_base;
 void* init_mul_c(int n) {
   int offset = n * n + 4;
   int* tab1 = wasm_module_0_memory_base;
-  int* tab2 = wasm_module_0_memory_base + offset; 
+  int* tab2 = wasm_module_0_memory_base + offset;
 
   int i, j;
   for (i = 0; i < n; i++) {

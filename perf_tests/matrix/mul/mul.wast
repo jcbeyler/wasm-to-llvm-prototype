@@ -28,11 +28,11 @@
 
    (block
     ;; Calculate size of each n * n matrix.
-    (set_local 6 (i32.mul 
+    (set_local 6 (i32.mul
                   (i32.mul (get_local 0) (get_local 0))
                   (i32.const 4)))
 
-    ;; Get pointers for each matrix. 
+    ;; Get pointers for each matrix.
     (set_local 2 (i32.const 0))
     (set_local 3 (get_local 6))
     (set_local 4 (i32.add (get_local 2) (get_local 6)))
@@ -45,9 +45,9 @@
     (label
      ;; Outer loop.
      (loop
-      (if
+      (if_else
        (i32.eq (get_local 5) (get_local 7))
-         (break 0)
+         (br 1)
          (block
           ;; Set inner IV to 0.
           (set_local 6 (i32.const 0))
@@ -55,16 +55,16 @@
           (label
            ;; Inner loop.
            (loop
-            (if
+            (if_else
              (i32.eq (get_local 6) (get_local 7))
-             (break 0)
+             (br 1)
              (block
              (i32.store (get_local 4)
                         (i32.add
-                          (i32.mul (get_local 1) 
+                          (i32.mul (get_local 1)
                                    (i32.load (get_local 2)))
                           (i32.load (get_local 3))))
-        
+
               ;; Augment IVs and pointers.
               (set_local 2 (i32.add (get_local 2) (i32.const 4)))
               (set_local 3 (i32.add (get_local 3) (i32.const 4)))
@@ -84,10 +84,10 @@
     (set_local 7 (i32.div (get_local 0) (i32.const 2)))
 
     (set_local 6 (i32.add
-                    (i32.mul 
+                    (i32.mul
                       (i32.mul (get_local 7) (get_local 0))
                       (i32.const 4))
-                    (i32.mul 
+                    (i32.mul
                       (get_local 7)
                       (i32.const 4))))
 
@@ -100,11 +100,11 @@
 
    (block
     ;; Calculate size of each n * n matrix.
-    (set_local 6 (i32.mul 
+    (set_local 6 (i32.mul
                   (i32.mul (get_local 0) (get_local 0))
                   (i32.const 4)))
 
-    ;; Get pointers for each matrix. 
+    ;; Get pointers for each matrix.
     (set_local 2 (i32.const 0))
     (set_local 3 (get_local 6))
 
@@ -116,9 +116,9 @@
     (label
      ;; Outer loop.
      (loop
-      (if
+      (if_else
        (i32.eq (get_local 4) (get_local 6))
-         (break 0)
+         (br 1)
          (block
           ;; Set inner IV to 0.
           (set_local 5 (i32.const 0))
@@ -126,9 +126,9 @@
           (label
            ;; Inner loop.
            (loop
-            (if
+            (if_else
              (i32.eq (get_local 5) (get_local 6))
-             (break 0)
+             (br 1)
              (block
               ;; Calculate the address: i * n + j
               ;;                   which means local(4) * n + local(5)
@@ -140,7 +140,7 @@
 
               ;; Set i * j at that cell for matrix starting at local(2).
               (i32.store (i32.add (get_local 2) (get_local 7))
-                         (i32.div 
+                         (i32.div
                                     (i32.mul (get_local 4) (get_local 5))
                                     (i32.const 16)
                          )
@@ -148,7 +148,7 @@
 
               ;; Set i * j at that cell for matrix starting at local(3).
               (i32.store (i32.add (get_local 3) (get_local 7))
-                         (i32.div 
+                         (i32.div
                                     (i32.mul (get_local 4) (get_local 5))
                                     (i32.const 16)
                          )

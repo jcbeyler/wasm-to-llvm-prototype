@@ -96,7 +96,7 @@ std::unique_ptr<Globals> g_variables;
   WasmFile* wf;
 }
 
-%token NOP BLOCK_TOKEN IF LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -147,7 +147,7 @@ std::unique_ptr<Globals> g_variables;
 %type<op> WRAP EXTEND CONVERT PROMOTE DEMOTE REINTERPRET CONVERSION
 %type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
-%type<string> FLOAT 
+%type<string> FLOAT
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
@@ -586,7 +586,7 @@ EXPRESSION_INNER:
       SetLocal* set_local = new SetLocal(var, value);
       $$ = set_local;
     } |
-    IF EXPRESSION EXPRESSION EXPRESSION {
+    IF_ELSE EXPRESSION EXPRESSION EXPRESSION {
       Expression* cond = $2;
       Expression* true_cond = $3;
       Expression* false_cond = $4;
@@ -608,9 +608,10 @@ EXPRESSION_INNER:
       LabelExpression* label = new LabelExpression(var, expr);
       $$ = label;
     } |
-    LOOP EXPRESSION {
-      Expression* expr = $2;
-      LoopExpression* loop = new LoopExpression(expr);
+    LOOP VARIABLE_OR_NOT EXPRESSIONS {
+      Variable* var = $2;
+      std::list<Expression*>* list = static_cast<std::list<Expression*>*>($3);
+      LoopExpression* loop = new LoopExpression(var, list);
       $$ = loop;
     } |
     MEMORY_OPERATION { $$ = $1; } |
@@ -652,7 +653,7 @@ ASSERT:
 ASSERT_RETURN_NAN:
   '('
   ASSERT_RETURN_NAN_TOKEN
-    SCRIPT_INVOKE 
+    SCRIPT_INVOKE
    ')' {
       // Create the call.
       CallExpression* call = $3;

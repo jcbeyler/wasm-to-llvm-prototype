@@ -264,16 +264,28 @@ class ReturnExpression : public Expression {
 
 class LoopExpression : public Expression {
   protected:
-    Expression* loop_;
+    Variable* var_;
+    std::list<Expression*>* loop_;
 
   public:
-    LoopExpression(Expression* expr) : loop_(expr) {
+    LoopExpression(Variable* var, std::list<Expression*>* list) : var_(var), loop_(list) {
     }
 
     virtual void Dump(int tabs = 0) const {
-      BISON_TABBED_PRINT(tabs, "(Loop\n");
-      if (loop_) {
-        loop_->Dump(tabs + 1);
+      BISON_TABBED_PRINT(tabs, "(Loop");
+
+      if (var_ != nullptr) {
+        BISON_PRINT("%s", var->GetString());
+      }
+      BISON_PRINT("\n");
+
+      if (loop_ != nullptr) {
+        for(std::list<Expression*>::iterator it = loop_->begin();
+                                             it != loop_->end();
+                                             it++) {
+          Expression* expr = *it;
+          expr->Dump(tabs + 1);
+        }
       }
       BISON_TABBED_PRINT(tabs, ")\n");
     }

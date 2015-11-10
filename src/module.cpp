@@ -248,9 +248,9 @@ void WasmModule::Dump() {
 void WasmModule::RegisterMangle(const std::string& name, const std::string& hashed) {
   assert(map_hash_association_.find(name) == map_hash_association_.end());
   assert(map_reversed_hash_association_.find(hashed) == map_reversed_hash_association_.end());
- 
-  map_hash_association_[name] = hashed; 
-  map_reversed_hash_association_[hashed] = name; 
+
+  map_hash_association_[name] = hashed;
+  map_reversed_hash_association_[hashed] = name;
 }
 
 WasmFunction* WasmModule::GetWasmFunction(const char* name, bool check_file, unsigned int line) const {

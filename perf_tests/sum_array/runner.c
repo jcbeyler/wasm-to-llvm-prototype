@@ -48,7 +48,7 @@ int run_wasm(int n) {
     n = max;
     fprintf(stderr, "Asking for too much, sum.wast only allows 1M elements, setting to 1M\n");
   }
-  
+
   for (i = 0; i < 1000; i++) {
     // Sum the array.
     result += wp_sum(n);

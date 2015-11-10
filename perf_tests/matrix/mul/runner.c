@@ -20,8 +20,8 @@
 #include "mul.h"
 
 // Wasm methods.
-int wp_mul_setter(int);
-int wp_multiply(int);
+int wm_1_setter(int);
+int wm_1_multiply(int);
 
 int init_wasm(int n) {
   // Call the setter first.
@@ -33,7 +33,7 @@ int init_wasm(int n) {
   }
 
   // Set the array.
-  wp_setter(n);
+  wm_1_setter(n);
 
   return 1;
 }
@@ -48,10 +48,10 @@ int run_wasm(int n) {
     n = max;
     fprintf(stderr, "Asking for too much, mul.wast only allows 1M elements, setting to 1M\n");
   }
-  
+
   for (i = 0; i < 1000; i++) {
     // Sum the array.
-    result += wp_multiply(n);
+    result += wm_1_multiply(n);
   }
 
   return result;
