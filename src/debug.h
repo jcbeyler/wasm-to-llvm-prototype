@@ -50,4 +50,6 @@
   BISON_PRINT_TABS(n); \
   BISON_PRINT(__VA_ARGS__);
 
+void PrintLine(int line);
+
 #endif
