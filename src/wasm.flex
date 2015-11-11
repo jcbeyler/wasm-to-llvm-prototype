@@ -492,8 +492,8 @@ ${ID} {
 }
 
 \n {
-  LEX_DEBUG_PRINT("Handled line %d\n", g_variables->GetLineCnt());
-  g_variables->IncrementLineCnt();
+  LEX_DEBUG_PRINT("Handled line %d\n", Globals::Get()->GetLineCnt());
+  Globals::Get()->IncrementLineCnt();
 }
 
 " " {

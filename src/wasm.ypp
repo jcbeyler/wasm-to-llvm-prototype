@@ -40,8 +40,6 @@
 extern int yyerror (const std::string& s);
 extern int yylex (void);
 
-std::unique_ptr<Globals> g_variables;
-
 %}
 
 %code requires {
@@ -64,9 +62,6 @@ std::unique_ptr<Globals> g_variables;
   class WasmModule;
   class WasmScript;
   class WasmScriptElem;
-
-#include <memory>
-  extern std::unique_ptr<Globals> g_variables;
 }
 
 %union {
@@ -202,7 +197,7 @@ SCRIPT_INVOKE:
 
    // Create the call.
    CallExpression* call  = new CallExpression(var, params);
-   call->SetLine(g_variables->GetLineCnt());
+   call->SetLine(Globals::Get()->GetLineCnt());
    $$ = call;
   }
 
@@ -210,7 +205,7 @@ SCRIPT_ELEM:
   ASSERT { $$ = $1; } |
   SCRIPT_INVOKE {
    $$ = new WasmInvoke($1);
-   $$->SetLine(g_variables->GetLineCnt());
+   $$->SetLine(Globals::Get()->GetLineCnt());
   }
 
 MODULE:
@@ -246,7 +241,7 @@ MODULE_ELEMS:
   } | {
     WasmModule* wm = new WasmModule();
 
-    wm->SetLine(g_variables->GetLineCnt());
+    wm->SetLine(Globals::Get()->GetLineCnt());
 
     $$ = wm;
   }
@@ -476,7 +471,7 @@ CALL:
     std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
     CallExpression* call = new CallExpression(var, list);
 
-    call->SetLine(g_variables->GetLineCnt());
+    call->SetLine(Globals::Get()->GetLineCnt());
 
     $$ = call;
   }
@@ -635,15 +630,15 @@ RESULT: RESULT_TOKEN TYPE { $$ = $2; }
 ASSERT:
   ASSERT_RETURN {
     $$ = $1;
-    $$->SetLine(g_variables->GetLineCnt());
+    $$->SetLine(Globals::Get()->GetLineCnt());
   } |
   ASSERT_TRAP {
     $$ = $1;
-    $$->SetLine(g_variables->GetLineCnt());
+    $$->SetLine(Globals::Get()->GetLineCnt());
   } |
   ASSERT_RETURN_NAN {
     $$ = $1;
-    $$->SetLine(g_variables->GetLineCnt());
+    $$->SetLine(Globals::Get()->GetLineCnt());
   } |
   ASSERT_INVALID {
     // We pass nothing here.
@@ -674,7 +669,7 @@ ASSERT_RETURN_NAN:
       vh = new ValueHolder(-1);
       Const* success = new Const(INT_32, vh);
 
-      vh = new ValueHolder(g_variables->GetLineCnt());
+      vh = new ValueHolder(Globals::Get()->GetLineCnt());
       Const* failure = new Const(INT_32, vh);
 
       IfExpression* if_expr = new IfExpression(binop, success, failure);
@@ -715,7 +710,7 @@ ASSERT_RETURN:
       ValueHolder* vh = new ValueHolder(-1);
       Const* success = new Const(INT_32, vh);
 
-      vh = new ValueHolder(g_variables->GetLineCnt());
+      vh = new ValueHolder(Globals::Get()->GetLineCnt());
       Const* failure = new Const(INT_32, vh);
 
       IfExpression* if_expr = new IfExpression(binop, success, failure);
@@ -785,7 +780,8 @@ ASSERT_INVALID:
 %%
 
 int yyerror (const std::string& s) {
-  fprintf(stderr, "Error line %d: %s\n", g_variables->GetLineCnt(), s.c_str());
+  fprintf(stderr, "Error line %d: %s\n", Globals::Get()->GetLineCnt(), s.c_str());
+  PrintLine(Globals::Get()->GetLineCnt());
   return 0;
 }
 
@@ -796,7 +792,7 @@ int main(int argc, char** argv) {
   }
 
   // Set up global variable singleton.
-  g_variables.reset(new Globals());
+  Globals::Get()->SetFileName(argv[1]);
 
   BISON_PRINT("Parsing %s\n", argv[1]);
 

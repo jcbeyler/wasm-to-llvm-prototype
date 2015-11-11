@@ -14,13 +14,17 @@
 // limitations under the License.
 */
 
+#include <memory>
+
 class Globals {
   protected:
     int line_cnt_;
+    char* name_;
 
+    static std::unique_ptr<Globals> g_variables_;
 
   public:
-    Globals() : line_cnt_(1) {
+    Globals() : line_cnt_(1), name_(nullptr) {
     }
 
     void IncrementLineCnt(int inc = 1) {
@@ -29,5 +33,23 @@ class Globals {
 
     int GetLineCnt() const {
       return line_cnt_;
+    }
+
+    const char* GetFileName() const {
+      return name_;
+    }
+
+    void SetFileName(char* name) {
+      name_ = name;
+    }
+
+    static Globals* Get() {
+      Globals* res = g_variables_.get();
+
+      if (res == nullptr) {
+        g_variables_.reset(new Globals());
+      }
+
+      return g_variables_.get();
     }
 };
