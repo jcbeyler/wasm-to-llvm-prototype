@@ -40,7 +40,7 @@ for name in $list; do
     echo "Skipping $f, does not exist"
   else
     # Clean up
-    rm obj/*ll obj/*s
+    rm obj/*ll obj/*s 2> /dev/null
 
     # Build the llvm IR
     $exe $f
