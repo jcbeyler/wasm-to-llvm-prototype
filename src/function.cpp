@@ -257,6 +257,13 @@ void WasmFunction::Generate(WasmModule* module) {
 }
 
 llvm::Value* WasmFunction::HandleReturn(llvm::Value* result, llvm::IRBuilder<>& builder) const {
+  // Get the type of the result: it might be void.
+  llvm::Type* result_type = result->getType();
+
+  if (result_type->isVoidTy()) {
+    // In this case, create a constant 0 and let the system handle it.
+    result = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, 0, false));
+  }
   return builder.CreateRet(HandleSimpleTypeCasts(result, ConvertType(result_), false, builder));
 }
 

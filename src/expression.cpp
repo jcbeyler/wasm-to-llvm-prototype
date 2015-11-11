@@ -109,6 +109,7 @@ WasmFunction* CallExpression::GetCallee(WasmFunction* fct) const {
 
 llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   WasmFunction* wfct = GetCallee(fct);
+  assert(wfct != nullptr);
   llvm::Function* callee = wfct->GetFunction();
   assert(callee != nullptr);
 
@@ -318,4 +319,12 @@ llvm::Value* ReturnExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& bui
   llvm::Value* result = result_->Codegen(fct, builder);
   assert(result != nullptr);
   fct->HandleReturn(result, builder);
+}
+
+llvm::Value* Unreachable::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  llvm::Intrinsic::ID intrinsic = llvm::Intrinsic::trap;
+  WasmModule* wasm_module = fct->GetModule();
+  llvm::Function* intrinsic_fct = wasm_module->GetOrCreateIntrinsic(intrinsic);
+  std::vector<Value*> no_arg;
+  return builder.CreateCall(intrinsic_fct, no_arg);
 }

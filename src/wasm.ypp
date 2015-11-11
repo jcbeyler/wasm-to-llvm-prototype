@@ -112,6 +112,7 @@ extern int yylex (void);
 %token INVOKE_TOKEN
 %token CALL_TOKEN
 %token LOCAL_TOKEN
+%token UNREACHABLE_TOKEN
 %token CONST
 %token LABEL
 %token MEMORY STORE LOAD
@@ -596,6 +597,9 @@ EXPRESSION_INNER:
     } |
     CALL {
       $$ = $1;
+    } |
+    UNREACHABLE_TOKEN {
+      $$ = new Unreachable();
     } |
     LABEL VARIABLE_OR_NOT EXPRESSION {
       Variable* var = $2;
