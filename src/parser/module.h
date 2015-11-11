@@ -161,7 +161,7 @@ class WasmModule {
     WasmFunction* GetWasmFunction(const std::string& name, bool check_file = true, unsigned int line = ~0) const;
     WasmFunction* GetWasmFunction(size_t idx) const;
 
-    llvm::Function* GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE type);
+    llvm::Function* GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE type = VOID);
     llvm::Function* GetWasmAssertTrapFunction();
 
     void MangleNames(WasmFile* file);

@@ -64,6 +64,15 @@ class Unop : public Expression {
       }
       BISON_PRINT(")");
     }
+
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+
+      fct(this, data);
+      if (only_ != nullptr) {
+        only_->Walk(fct, data);
+      }
+    }
 };
 
 
@@ -106,6 +115,15 @@ class SetLocal : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+      fct(this, data);
+
+      if (value_ != nullptr) {
+        value_->Walk(fct, data);
+      }
+    }
 };
 
 class IfExpression : public Expression {
@@ -148,6 +166,23 @@ class IfExpression : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+      fct(this, data);
+
+      if (cond_ != nullptr) {
+        cond_->Walk(fct, data);
+      }
+
+      if (true_cond_ != nullptr) {
+        true_cond_->Walk(fct, data);
+      }
+
+      if (false_cond_ != nullptr) {
+        false_cond_->Walk(fct, data);
+      }
+    }
 };
 
 class Const: public Expression {
@@ -235,6 +270,15 @@ class CallExpression : public Expression {
       BISON_PRINT(")");
     }
 
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+      fct(this, data);
+
+      for (auto elem : *params_) {
+        elem->Walk(fct, data);
+      }
+    }
+
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 
@@ -257,6 +301,15 @@ class ReturnExpression : public Expression {
 
     Expression* GetResult() const {
       return result_;
+    }
+
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+
+      fct(this, data);
+      if (result_ != nullptr) {
+        result_->Walk(fct, data);
+      }
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
@@ -292,6 +345,18 @@ class LoopExpression : public Expression {
 
     virtual bool GoesToTheLine() const {
       return true;
+    }
+
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+
+      fct(this, data);
+      for(std::list<Expression*>::iterator it = loop_->begin();
+          it != loop_->end();
+          it++) {
+        Expression* expr = *it;
+        expr->Walk(fct, data);
+      }
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
@@ -381,6 +446,18 @@ class BlockExpression : public Expression {
       }
     }
 
+    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+
+      fct(this, data);
+      for(std::list<Expression*>::const_iterator iter = list_->begin();
+                                                 iter != list_->end();
+                                                 iter++) {
+        auto elem = *iter;
+        elem->Walk(fct, data);
+      }
+    }
+
     virtual bool GoesToTheLine() const {
       return true;
     }
@@ -420,5 +497,17 @@ class ValueExpression : public Expression {
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
       return value_;
     }
+};
+
+class Unreachable : public Expression {
+  public:
+    Unreachable() {
+    }
+
+    virtual void Dump(int tabs = 0) const {
+      BISON_TABBED_PRINT(tabs, "(Unreachable)");
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 #endif

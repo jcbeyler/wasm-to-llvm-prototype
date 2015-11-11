@@ -309,6 +309,11 @@ local {
   return LOCAL_TOKEN;
 }
 
+unreachable {
+  LEX_DEBUG_PRINT("UNREACHABLE\n");
+  return UNREACHABLE_TOKEN;
+}
+
 label {
   LEX_DEBUG_PRINT("LABEL\n");
   return LABEL;

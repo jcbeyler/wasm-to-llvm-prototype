@@ -33,7 +33,9 @@ llvm::Function* WasmModule::GetOrCreateIntrinsic(llvm::Intrinsic::ID id, ETYPE t
   std::vector<Type*> args;
 
   // Push the argument type.
-  args.push_back(ConvertType(type));
+  if (type != VOID) {
+    args.push_back(ConvertType(type));
+  }
 
   llvm::Function* fct;
 
