@@ -98,6 +98,10 @@ class WasmFile {
       return nullptr;
     }
 
+    std::vector<WasmModule*>& GetWasmModules() {
+      return modules_;
+    }
+
     WasmModule* GetAssertModule() {
       if (script_module_ == nullptr) {
         llvm::Module* module =

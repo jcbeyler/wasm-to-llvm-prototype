@@ -14,19 +14,34 @@
 // limitations under the License.
 */
 
-#include "driver.h"
-#include "pass_driver.h"
-#include "wasm_file.h"
+#include <vector>
 
-void Driver::Drive() {
-  PassDriver driver(file_);
+// Forward declaration.
+class Pass;
+class WasmFile;
+class WasmFunction;
 
-  // Run the driver of passes.
-  driver.Drive();
+class PassDriver {
+  protected:
+    WasmFile* file_;
+    std::vector<Pass*> passes_;
 
-  // Then generate the file code.
-  file_->Generate();
+    void InitPasses();
+    void RunPasses();
+    void CleanUpPasses();
+    void RunPassesOnFunction(WasmFunction* fct);
 
-  // Dump for debug.
-  file_->Print();
-}
+  public:
+    PassDriver(WasmFile* f) : file_(f) {
+    }
+
+    void Drive() {
+      InitPasses();
+      RunPasses();
+      CleanUpPasses();
+    }
+
+    void AddPass(Pass* pass) {
+      passes_.push_back(pass);
+    }
+};
