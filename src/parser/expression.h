@@ -328,7 +328,7 @@ class LoopExpression : public Expression {
       BISON_TABBED_PRINT(tabs, "(Loop");
 
       if (var_ != nullptr) {
-        BISON_PRINT("%s", var->GetString());
+        BISON_PRINT("%s", var_->GetString());
       }
       BISON_PRINT("\n");
 

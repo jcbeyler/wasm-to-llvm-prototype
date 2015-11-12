@@ -334,7 +334,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   IfExpression* full_test = new IfExpression(cond, left_test, rdr);
 
   // Now generate code.
-  full_test->Codegen(fct, builder);
+  return full_test->Codegen(fct, builder);
 }
 
 llvm::Value* Binop::HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder) {

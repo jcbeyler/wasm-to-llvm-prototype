@@ -16,15 +16,26 @@
 
 #include <memory>
 
+#include "wasm_file.h"
+
 class Globals {
   protected:
     int line_cnt_;
     char* name_;
+    WasmFile* file_;
 
     static std::unique_ptr<Globals> g_variables_;
 
   public:
-    Globals() : line_cnt_(1), name_(nullptr) {
+    Globals() : line_cnt_(1), name_(nullptr), file_(nullptr) {
+    }
+
+    void SetWasmFile(WasmFile* f) {
+      file_ = f;
+    }
+
+    WasmFile* GetWasmFile() const {
+      return file_;
     }
 
     void IncrementLineCnt(int inc = 1) {

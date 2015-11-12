@@ -152,13 +152,7 @@ extern int yylex (void);
 %%
 
 START: FILE {
-    WasmFile* file = $1;
-
-    // Generate the file code.
-    file->Generate();
-
-    // Dump for debug.
-    file->Print();
+  Globals::Get()->SetWasmFile($1);
 }
 
 FILE:

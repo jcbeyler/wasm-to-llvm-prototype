@@ -48,6 +48,7 @@ llvm::Value* GetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 llvm::Value* SetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   // First generate the value code.
   llvm::Value* value = value_->Codegen(fct, builder);
+  assert(value != nullptr);
 
   // Now call the right method to set it.
   if (var_->IsString()) {

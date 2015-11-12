@@ -13,37 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-
-#include <iostream>
-
-#include "debug.h"
 #include "driver.h"
-#include "globals.h"
 #include "wasm_file.h"
 
-int yyparse();
+void Driver::Drive() {
+  // Generate the file code.
+  file_->Generate();
 
-int main(int argc, char** argv) {
-  if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <filename> " << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  // Set up global variable singleton.
-  Globals::Get()->SetFileName(argv[1]);
-
-  BISON_PRINT("Parsing %s\n", argv[1]);
-
-  FILE* f = freopen(argv[1], "r", stdin);
-  assert(f != nullptr);
-  yyparse();
-
-  BISON_PRINT("Done Parsing %s\n", argv[1]);
-
-  WasmFile* file = Globals::Get()->GetWasmFile();
-
-  Driver driver(file);
-  driver.Drive();
-
-  return EXIT_SUCCESS;
+  // Dump for debug.
+  file_->Print();
 }
