@@ -149,6 +149,10 @@ class WasmModule {
       return hash_name_;
     }
 
+    std::list<WasmFunction*>& GetWasmFunctions() {
+      return functions_;
+    }
+
     void GenerateMemoryBaseFunction();
     std::string GetMemoryBaseFunctionName() const;
     std::string GetMemoryBaseName() const;
@@ -169,7 +173,6 @@ class WasmModule {
     bool DoesMangledNameExist(const std::string& name) {
       return map_reversed_hash_association_.find(name) != map_reversed_hash_association_.end();
     }
-
 };
 
 #endif
