@@ -23,8 +23,8 @@
 class Operation {
   protected:
     OPERATION op_;
-    ETYPE type_;
     bool sign_or_order_;
+    ETYPE type_;
 
   public:
     Operation(OPERATION o, bool sign_or_order, ETYPE t) : op_(o), sign_or_order_(sign_or_order), type_(t) {
@@ -82,11 +82,11 @@ class ConversionOperation : public Operation {
       return op_;
     }
 
-    ETYPE SetDest(ETYPE val) {
+    void SetDest(ETYPE val) {
       type_ = val;
     }
 
-    ETYPE SetSrc(ETYPE val) {
+    void SetSrc(ETYPE val) {
       src_ = val;
     }
 

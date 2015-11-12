@@ -44,6 +44,10 @@ class Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
       BISON_PRINT("No code generation for this expression node\n");
+
+      (void) fct;
+      (void) builder;
+
       return nullptr;
     }
 };

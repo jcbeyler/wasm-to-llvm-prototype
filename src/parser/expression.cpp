@@ -83,6 +83,10 @@ llvm::Value* Const::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
       assert(0);
       break;
   }
+
+  (void) fct;
+  (void) builder;
+
   return nullptr;
 }
 
@@ -225,7 +229,7 @@ llvm::Value* LabelExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
   fct->PushLabel(end_label);
 
   // Generate the code now.
-  expr_->Codegen(fct, builder);
+  llvm::Value* res = expr_->Codegen(fct, builder);
 
   // Now jump to the end_label.
   builder.CreateBr(end_label);
@@ -239,12 +243,11 @@ llvm::Value* LabelExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
 
   // Finally pop the label.
   fct->PopLabel();
+
+  return res;
 }
 
 llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  // For now, just ignore it for code generation.
-  llvm::BasicBlock* preheader = builder.GetInsertBlock();
-
   // The other two will wait before being emitted.
   const char* name = (var_ != nullptr) ? var_->GetString() : "loop_block";
   llvm::BasicBlock* loop = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
@@ -319,7 +322,7 @@ llvm::Value* ReturnExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& bui
   // Generate the code for the return, then call the handler.
   llvm::Value* result = result_->Codegen(fct, builder);
   assert(result != nullptr);
-  fct->HandleReturn(result, builder);
+  return fct->HandleReturn(result, builder);
 }
 
 llvm::Value* Unreachable::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {

@@ -33,8 +33,6 @@ class ReallyDivRem : public Binop {
       }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-      OPERATION op = operation_->GetOperation();
-
       assert(left_ != nullptr && right_ != nullptr);
       Value* lv = left_->Codegen(fct, builder);
       Value* rv = right_->Codegen(fct, builder);
@@ -50,7 +48,7 @@ class ReallyDivRem : public Binop {
       llvm::Type* lt = lv->getType();
       llvm::Type* rt = rv->getType();
 
-      ETYPE type = HandleType(old_type, lt, rt);
+      ETYPE type = HandleType(lt, rt);
 
       if (old_type != type) {
         operation_->SetType(type);
@@ -83,8 +81,6 @@ class ReallyShift : public Binop {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-      OPERATION op = operation_->GetOperation();
-
       assert(left_ != nullptr && right_ != nullptr);
       Value* lv = left_->Codegen(fct, builder);
       Value* rv = right_->Codegen(fct, builder);
@@ -100,7 +96,7 @@ class ReallyShift : public Binop {
       llvm::Type* lt = lv->getType();
       llvm::Type* rt = rv->getType();
 
-      ETYPE type = HandleType(old_type, lt, rt);
+      ETYPE type = HandleType(lt, rt);
 
       if (old_type != type) {
         operation_->SetType(type);
@@ -120,7 +116,7 @@ class ReallyShift : public Binop {
     }
 };
 
-ETYPE Binop::HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt) {
+ETYPE Binop::HandleType(llvm::Type* lt, llvm::Type* rt) {
   // If type is not void, the type should be the same as lt.
   llvm::Type* chosen = lt;
   llvm::Type* void_type = llvm::Type::getVoidTy(llvm::getGlobalContext());
@@ -232,7 +228,6 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     Binop* cond = new Binop(op, right_, width);
 
     vh = new ValueHolder(left_width - 1);
-    Const* width_minus_one = new Const(type, vh);
 
     vh = new ValueHolder(0);
     Const* zero = new Const(type, vh);
@@ -243,7 +238,7 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     IfExpression* width_check = new IfExpression(cond, zero, rsr);
 
     // Now generate the code.
-    width_check->Codegen(fct, builder);
+    return width_check->Codegen(fct, builder);
   } else {
     /*
      *  // Testing unsigned too big or negative in one step.
@@ -271,7 +266,7 @@ llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, b
     IfExpression* width_check = new IfExpression(cond, rsr, original_rsr);
 
     // Now generate the code.
-    width_check->Codegen(fct, builder);
+    return width_check->Codegen(fct, builder);
   }
 }
 
@@ -295,7 +290,6 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   // TODO: when rereading the spec, this does not seem right for signed divide; even rem I'm not sure.
   if (div) {
     if (sign) {
-      ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign, type);
       if (type == INT_32) {
         vh = new ValueHolder(0x7fffffff);
       } else {
@@ -339,9 +333,8 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
 
 llvm::Value* Binop::HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   WasmModule* wasm_module = fct->GetModule();
-  llvm::Module* module = wasm_module->GetModule();
   ETYPE type = operation_->GetType();
-  llvm::Intrinsic::ID intrinsic;
+  llvm::Intrinsic::ID intrinsic = llvm::Intrinsic::trap;
   OPERATION op = operation_->GetOperation();
 
   switch (op) {
@@ -423,7 +416,7 @@ llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   llvm::Type* lt = lv->getType();
   llvm::Type* rt = rv->getType();
 
-  type = HandleType(old_type, lt, rt);
+  type = HandleType(lt, rt);
 
   if (old_type != type) {
     operation_->SetType(type);

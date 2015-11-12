@@ -64,7 +64,8 @@ class WasmFunction {
   public:
     WasmFunction(std::list<FunctionField*>* f = nullptr, const std::string& s = "anonymous",
                  llvm::Function* fct = nullptr, WasmModule* module = nullptr, ETYPE result = VOID) :
-      name_(s), fct_(fct), module_(module), fields_(f), result_(result), local_base_(nullptr) {
+      name_(s), fct_(fct), fields_(f), module_(module), result_(result), local_base_(nullptr) 
+      {
         // If anonymous, let's add a unique suffix.
         if (name_ == "anonymous") {
           static int cnt = 0;
@@ -146,7 +147,7 @@ class WasmFunction {
     llvm::Value* HandleReturn(llvm::Value* result, llvm::IRBuilder<>& builder) const;
 
     void MangleNames(WasmFile* file, WasmModule* module);
-    void MangleFunctionName(WasmFile* file, WasmModule* module);
+    void MangleFunctionName(WasmModule* module);
 };
 
 #endif

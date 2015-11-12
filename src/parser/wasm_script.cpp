@@ -17,7 +17,7 @@
 #include "wasm_script.h"
 #include "wasm_file.h"
 
-static CallExpression* HandleInvoke(WasmModule* wasm_module, WasmScriptElem* elem) {
+static CallExpression* HandleInvoke(WasmScriptElem* elem) {
   const std::string& name = elem->GetName();
 
   // Generate the call.
@@ -37,7 +37,7 @@ static CallExpression* HandleAssert(WasmModule* wasm_module, WasmScriptElem* ele
   //   or go via a handler and pass the wasm_assert method.
   if (dynamic_cast<WasmAssertReturn*>(elem) != nullptr) {
     // In this case, we can handle it as if it's just an invoke.
-    return HandleInvoke(wasm_module, elem);
+    return HandleInvoke(elem);
   } else {
     // In the assert_trap case, we want to actually call the assert_trap_handler method.
     // Generate the call.
@@ -98,7 +98,7 @@ void WasmScript::GenerateGeneralScriptCalls(WasmFile* file) {
     Expression* expr = nullptr;
 
     if (dynamic_cast<WasmInvoke*>(elem) != nullptr) {
-      expr = HandleInvoke(wasm_module, elem);
+      expr = HandleInvoke(elem);
     } else {
       CallExpression* call = HandleAssert(wasm_module, elem);
 

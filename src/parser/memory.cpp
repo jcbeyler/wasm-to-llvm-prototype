@@ -93,8 +93,6 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
   assert(ptr_type != nullptr);
 
   // Create the base address in the same right type.
-  llvm::Type* dest_type = ConvertType(type_);
-
   llvm::Value* address_i = address_->Codegen(fct, builder);
   llvm::Value* local_base = fct->GetLocalBase();
   llvm::Type* type_64 = llvm::Type::getInt64Ty(llvm::getGlobalContext());
@@ -116,11 +114,10 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
 
 llvm::Value* Load::ResizeIntegerIfNeed(llvm::Value* value,
                                         llvm::Type* value_type,
-                                        ETYPE destination_type,
                                         bool sign,
                                         llvm::IRBuilder<>& builder) {
   // Get size differences.
-  int value_type_bw = value_type->getIntegerBitWidth();
+  size_t value_type_bw = value_type->getIntegerBitWidth();
   size_t type_size = GetTypeSize(type_);
 
   if (value_type_bw != type_size) {
@@ -144,7 +141,7 @@ llvm::Value* Load::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   switch (type_) {
     case INT_32:
     case INT_64:
-      value = ResizeIntegerIfNeed(value, value->getType(), type_, sign_, builder);
+      value = ResizeIntegerIfNeed(value, value->getType(), sign_, builder);
       break;
     case FLOAT_32:
     case FLOAT_64:
@@ -160,11 +157,10 @@ llvm::Value* Load::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 
 llvm::Value* Store::ResizeIntegerIfNeed(llvm::Value* value,
                                         llvm::Type* value_type,
-                                        llvm::Type* address_type,
                                         bool sign,
                                         llvm::IRBuilder<>& builder) {
   // Get size differences.
-  int value_type_bw = value_type->getIntegerBitWidth();
+  size_t value_type_bw = value_type->getIntegerBitWidth();
 
   if (value_type_bw != size_) {
     // Then it depends on sign.
@@ -181,14 +177,12 @@ llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   llvm::Value* value = value_->Codegen(fct, builder);
 
   // Check if the type of what we are storing is the same type as what we have like size.
-  llvm::Type* address_type = address->getType();
   llvm::Type* value_type = value->getType();
 
-  llvm::Type::TypeID address_type_id = address_type->getTypeID();
   llvm::Type::TypeID value_type_id = value_type->getTypeID();
 
   if (value_type_id == llvm::Type::IntegerTyID) {
-    value = ResizeIntegerIfNeed(value, value_type, address_type, sign_, builder);
+    value = ResizeIntegerIfNeed(value, value_type, sign_, builder);
   } else {
     assert(GetTypeSize(type_) == size_);
   }

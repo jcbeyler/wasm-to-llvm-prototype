@@ -51,7 +51,6 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 
   if (is_intrinsic == true) {
     WasmModule* wasm_module = fct->GetModule();
-    llvm::Module* module = wasm_module->GetModule();
     ETYPE type = operation_->GetType();
     llvm::Intrinsic::ID intrinsic;
 

@@ -30,14 +30,17 @@ class WasmFunction;
 class Nop : public Expression {
   public:
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      (void) fct;
+      (void) builder;
+
       return nullptr;
     }
 };
 
 class Unop : public Expression {
   protected:
-    Expression* only_;
     Operation* operation_;
+    Expression* only_;
 
   public:
     Unop(Operation* op, Expression* only) :
@@ -253,7 +256,7 @@ class CallExpression : public Expression {
     WasmFunction* GetCallee(WasmFunction* fct) const;
 
     virtual void Dump(int tabs = 0) const {
-      BISON_PRINT("(Call ");
+      BISON_TABBED_PRINT(tabs, "(Call ");
       if (call_id_) {
         call_id_->Dump();
       } else {
@@ -478,6 +481,8 @@ class StringExpression : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      (void) fct;
+
       return builder.CreateGlobalStringPtr(s_);
     }
 };
@@ -495,6 +500,9 @@ class ValueExpression : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      (void) fct;
+      (void) builder;
+
       return value_;
     }
 };

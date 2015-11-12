@@ -85,6 +85,8 @@ class Local {
       }
 
       BISON_PRINT(")");
+
+      (void) prefix;
     }
 
     const std::list<LocalElem*>& GetList() const {
