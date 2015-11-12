@@ -25,6 +25,8 @@
 
 const char* GetETypeName(ETYPE type) {
   switch (type) {
+    case VOID:
+      return "void";
     case FLOAT_32:
       return "f32";
     case FLOAT_64:
@@ -123,6 +125,14 @@ const char* DumpOperation(OPERATION op) {
       return "reinterpret";
     case PROMOTE_OPER:
       return "demote";
+    case CTZ_OPER:
+      return "ctz";
+    case CONVERT_OPER:
+      return "convert";
+    case STORE_OPER:
+      return "store";
+    case LOAD_OPER:
+      return "load";
   }
 
   return "Unknown";
@@ -130,6 +140,8 @@ const char* DumpOperation(OPERATION op) {
 
 llvm::Type* ConvertType(ETYPE type) {
   switch (type) {
+    case VOID:
+      return llvm::Type::getVoidTy(llvm::getGlobalContext());
     case FLOAT_32:
       return llvm::Type::getFloatTy(llvm::getGlobalContext());
     case FLOAT_64:
@@ -153,12 +165,6 @@ static llvm::Value* HandleTypeCastsFromFloats(llvm::Value* value, llvm::Type* de
     case llvm::Type::IntegerTyID: {
       // Let us check we have the right size though.
       int dest_type_bw = dest_type->getIntegerBitWidth();
-      llvm::Type* integer_type = dest_type;
-
-      if (dest_type_bw != 32) {
-        // First go to 32-bit integer.
-        integer_type = llvm::Type::getInt32Ty(llvm::getGlobalContext());
-      }
 
       if (sign) {
         value = builder.CreateFPToSI(value, dest_type, "fptosi");
@@ -188,12 +194,6 @@ static llvm::Value* HandleTypeCastsFromDoubles(llvm::Value* value, llvm::Type* d
     case llvm::Type::IntegerTyID: {
       // Let us check we have the right size though.
       int dest_type_bw = dest_type->getIntegerBitWidth();
-      llvm::Type* integer_type = dest_type;
-
-      if (dest_type_bw != 64) {
-        // First go to 32-bit integer.
-        integer_type = llvm::Type::getInt64Ty(llvm::getGlobalContext());
-      }
 
       if (sign) {
         value = builder.CreateFPToSI(value, dest_type, "fptosi");
@@ -268,7 +268,10 @@ llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* src_type, llvm::Typ
         return value;
       default: {
         llvm::Type::TypeID dest_type_id = dest_type->getTypeID();
+
         BISON_PRINT("HandleTypeCast failure: destination is %d and src is %d\n", dest_type_id, src_type_id);
+
+        (void) dest_type_id;
         assert(0);
         break;
       }
@@ -338,6 +341,9 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
           assert(0);
           break;
       }
+    default:
+      assert(0);
+      break;
   }
 
   // Should not get here.

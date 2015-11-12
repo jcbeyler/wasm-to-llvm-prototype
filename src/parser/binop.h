@@ -29,10 +29,10 @@
 
 class Binop : public Expression {
   protected:
-    Expression *left_, *right_;
     Operation* operation_;
+    Expression *left_, *right_;
 
-    ETYPE HandleType(ETYPE type, llvm::Type* lt, llvm::Type* rt);
+    ETYPE HandleType(llvm::Type* lt, llvm::Type* rt);
     llvm::Value* HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder);
     llvm::Value* HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool right);
     llvm::Value* HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool div);
@@ -53,11 +53,11 @@ class Binop : public Expression {
       return left_;
     }
 
-    Expression* SetRight(Expression* r) {
+    void SetRight(Expression* r) {
       right_ = r;
     }
 
-    Expression* SetLeft(Expression* l) {
+    void SetLeft(Expression* l) {
       left_ = l;
     }
 

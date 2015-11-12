@@ -308,11 +308,13 @@ llvm::BasicBlock* WasmFunction::GetLabel(const char* name) {
 }
 
 void WasmFunction::MangleNames(WasmFile* file, WasmModule* module) {
+  (void) file;
+
   // First mangle the function name.
-  MangleFunctionName(file, module);
+  MangleFunctionName(module);
 }
 
-void WasmFunction::MangleFunctionName(WasmFile* file, WasmModule* module) {
+void WasmFunction::MangleFunctionName(WasmModule* module) {
   std::ostringstream oss;
 
   // We start by mangling it using the module hash.

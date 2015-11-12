@@ -252,7 +252,13 @@ class ValueHolder {
           type_ = VH_DOUBLE;
         }
         break;
+
+        default:
+         assert(0);
+         break;
       }
+
+      return true;
     }
 };
 

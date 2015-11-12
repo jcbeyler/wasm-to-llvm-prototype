@@ -86,7 +86,6 @@ class Store : public MemoryExpression {
 
     llvm::Value* ResizeIntegerIfNeed(llvm::Value* value,
                                      llvm::Type* value_type,
-                                     llvm::Type* address_type,
                                      bool sign,
                                      llvm::IRBuilder<>& builder);
 
@@ -139,7 +138,6 @@ class Load : public MemoryExpression {
 
     llvm::Value* ResizeIntegerIfNeed(llvm::Value* value,
                                      llvm::Type* value_type,
-                                     ETYPE destination_type,
                                      bool sign,
                                      llvm::IRBuilder<>& builder);
 

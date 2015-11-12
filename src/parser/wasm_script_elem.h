@@ -68,6 +68,7 @@ class WasmScriptElem {
     }
 
     virtual void Codegen(WasmFile* file) {
+      (void) file;
       BISON_PRINT("No codegen for this script element: %s\n", name_.c_str());
     }
 
