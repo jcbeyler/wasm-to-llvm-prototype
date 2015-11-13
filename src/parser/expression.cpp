@@ -195,7 +195,8 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
 
   // Result is the true_result except if there is an else.
   Value* result = true_result;
-  if (false_result != nullptr) {
+
+  if (should_merge_ == true && false_result != nullptr) {
     // Now add a phi node for both sides. And that will be the result.
 
     // But first what type?

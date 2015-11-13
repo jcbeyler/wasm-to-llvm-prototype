@@ -372,10 +372,14 @@ void WasmFunction::MangleFunctionName(WasmModule* module) {
   name_ = end_name;
 }
 
-void WasmFunction::Walk(void (*fct)(Expression*, void*), void* data) {
+bool WasmFunction::Walk(bool (*fct)(Expression*, void*), void* data) {
   for (auto elem : ast_) {
     fct(elem, data);
 
-    elem->Walk(fct, data);
+    if (elem->Walk(fct, data) == false) {
+      return false;
+    }
   }
+
+  return true;
 }

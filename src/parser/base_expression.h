@@ -37,9 +37,9 @@ class Expression {
       return false;
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
-      fct(this, data);
+      return fct(this, data);
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
