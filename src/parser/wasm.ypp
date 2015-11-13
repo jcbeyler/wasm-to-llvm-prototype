@@ -91,7 +91,7 @@ extern int yylex (void);
   WasmFile* wf;
 }
 
-%token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -545,7 +545,6 @@ MEMORY_OPERATION:
     $$ = st; }
 
 EXPRESSION_INNER:
-    NOP { $$ = nullptr; } |
     BINOP EXPRESSION EXPRESSION {
       Operation* op = $1;
       Expression* left = $2;

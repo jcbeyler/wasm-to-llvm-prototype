@@ -218,11 +218,6 @@ copysign {
   return COPYSIGN;
 }
 
-nop {
-  LEX_DEBUG_PRINT("NOP\n");
-  return NOP;
-}
-
 reinterpret {
   LEX_DEBUG_PRINT("REINTERPRET\n");
   yylval.l = REINTERPRET_OPER;
