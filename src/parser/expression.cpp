@@ -140,10 +140,14 @@ llvm::Value* IfExpression::TransformCondition(llvm::Value* value, llvm::IRBuilde
   llvm::Type* type = value->getType();
 
   if (type->isIntegerTy(1) == false) {
-    llvm::Type* dest_type = llvm::Type::getInt1Ty(llvm::getGlobalContext());
-
-    // We need to cast this one.
-    return HandleTypeCasts(value, type, dest_type, true, builder);
+    if (type->isFloatingPointTy()) {
+      llvm::Value* zero = llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(0.0));;
+      // Not sure ordered is what we want but let us assume for now.
+      return builder.CreateFCmpONE(value, zero, "cmp_zero");
+    } else {
+      llvm::Value* zero = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(type->getIntegerBitWidth(), 0, false));
+      return builder.CreateICmpNE(value, zero, "cmp_zero");
+    }
   }
 
   // Nothing to be done.
@@ -211,21 +215,25 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
   // Result is the true_result except if there is an else.
   Value* result = true_result;
 
-  if (should_merge_ == true && false_result != nullptr) {
-    // Now add a phi node for both sides. And that will be the result.
+  if (true_result == nullptr) {
+    result = false_result;
+  } else {
+    if (should_merge_ == true && false_result != nullptr) {
+      // Now add a phi node for both sides. And that will be the result.
 
-    // But first what type?
-    llvm::Type* merge_type = true_result->getType();
+      // But first what type?
+      llvm::Type* merge_type = true_result->getType();
 
-    // TODO: this is not enough even... but it should bring me back here fast...
-    assert(merge_type == false_result->getType());
+      // TODO: this is not enough even... but it should bring me back here fast...
+      assert(merge_type == false_result->getType());
 
-    PHINode* merge_phi = builder.CreatePHI(merge_type, 2, "iftmp");
+      PHINode* merge_phi = builder.CreatePHI(merge_type, 2, "iftmp");
 
-    merge_phi->addIncoming(true_result, true_bb);
-    merge_phi->addIncoming(false_result, false_bb);
+      merge_phi->addIncoming(true_result, true_bb);
+      merge_phi->addIncoming(false_result, false_bb);
 
-    result = merge_phi;
+      result = merge_phi;
+    }
   }
 
   return result;

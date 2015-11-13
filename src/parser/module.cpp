@@ -95,7 +95,10 @@ void WasmModule::Generate() {
 
     fct.Generate();
 
-    assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
+    if (llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == true) {
+      BISON_PRINT("Problem with method %s\n", fct.GetName().c_str());
+      assert(0);
+    }
   }
 
   // Run the optimizations.
