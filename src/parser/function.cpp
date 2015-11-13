@@ -373,3 +373,11 @@ void WasmFunction::MangleFunctionName(WasmModule* module) {
   // Now mangle it.
   name_ = end_name;
 }
+
+void WasmFunction::Walk(void (*fct)(Expression*, void*), void* data) {
+  for (auto elem : ast_) {
+    fct(elem, data);
+
+    elem->Walk(fct, data);
+  }
+}

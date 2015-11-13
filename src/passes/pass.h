@@ -14,10 +14,13 @@
 // limitations under the License.
 */
 
+#ifndef H_PASS
+#define H_PASS
+
 // Forward declaration.
 class WasmFunction;
 
-class Pass {
+class WasmPass {
   public:
     // Gate determines if we do this.
     virtual bool Gate(WasmFunction* fct) {
@@ -50,3 +53,5 @@ class Pass {
     virtual void CleanUp() {
     }
 };
+
+#endif
