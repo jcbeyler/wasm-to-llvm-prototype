@@ -24,6 +24,9 @@ void Driver::Drive() {
   // Run the driver of passes.
   driver.Drive();
 
+  // First initialize the file data structures.
+  file_->Initialize();
+
   // Then generate the file code.
   file_->Generate();
 

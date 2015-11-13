@@ -6,7 +6,7 @@ The Spec implementation is the reference for semantical questions. Here, we are 
 
 Currently, it can
 
-* *parse* a few of the spec test cases
+* *parse* more than half of the spec test cases
 * *generate* LLVM IR and dumps it for each module file
 * *generate* the assertion opcodes to validate the LLVM IR
 * *generate* a single *execute_asserts* method that calls each assert, allowing easy testing with a very simple driver
@@ -129,15 +129,13 @@ The implementation consists of the following folders:
 
 The code itself is divided in major components:
 
-* *opt.flex* : the Flex lexer that reads the input code
+* *wasm.flex* : the Flex lexer that reads the input code
 
-* *opt.ypp* : the Bison parser that creates the AST
+* *wasm.ypp* : the Bison parser that creates the AST
 
 * *debug.h* : changes debug information being printed by the lexer and parser
 
 * *wasm_file.h* : entry point of code generation since it represents the whole file
-
-* *other.cpp/.h* : all the rest of the files :)
 
 ## What Next?
 

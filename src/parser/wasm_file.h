@@ -70,8 +70,6 @@ class WasmFile {
     void Initialize();
 
     void Generate() {
-      Initialize();
-
       for (auto module : modules_) {
         module->Generate();
       }
