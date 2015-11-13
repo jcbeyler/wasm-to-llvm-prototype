@@ -94,6 +94,9 @@ void WasmFunction::Populate() {
 }
 
 void WasmFunction::GeneratePrototype(WasmModule* module) {
+  // Remember the module.
+  module_ = module;
+
   BISON_PRINT("Generating %s\n", name_.c_str());
   Dump(0);
 
@@ -217,12 +220,7 @@ void WasmFunction::GetBaseMemory(llvm::IRBuilder<>& builder) {
   }
 }
 
-void WasmFunction::Generate(WasmModule* module) {
-  // Remember the module.
-  module_ = module;
-
-  GeneratePrototype(module);
-
+void WasmFunction::Generate() {
   if (fct_ == nullptr) {
     BISON_PRINT("Problem with function definition: %s\n", name_.c_str());
     return;

@@ -89,17 +89,12 @@ llvm::Function* WasmModule::GetWasmAssertTrapFunction() {
 }
 
 void WasmModule::Generate() {
-  // Make the module, which holds all the code.
-  module_ = new llvm::Module(name_.c_str(), llvm::getGlobalContext());
-
-  // Some maintenance before to do.
-  Initialize();
-
   // For each function, go from here to LLVM.
   for (auto it : functions_) {
     WasmFunction& fct = *it;
 
-    fct.Generate(this);
+    fct.GeneratePrototype(this);
+    fct.Generate();
 
     assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
   }
@@ -144,6 +139,9 @@ void WasmModule::Generate() {
 }
 
 void WasmModule::Initialize() {
+  // Make the module, which holds all the code.
+  module_ = new llvm::Module(name_.c_str(), llvm::getGlobalContext());
+
   for (auto it : functions_) {
     map_functions_[it->GetName()] = it;
     vector_functions_.push_back(it);

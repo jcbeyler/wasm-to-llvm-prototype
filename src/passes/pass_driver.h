@@ -17,14 +17,14 @@
 #include <vector>
 
 // Forward declaration.
-class Pass;
+class WasmPass;
 class WasmFile;
 class WasmFunction;
 
 class PassDriver {
   protected:
     WasmFile* file_;
-    std::vector<Pass*> passes_;
+    std::vector<WasmPass*> passes_;
 
     void InitPasses();
     void RunPasses();
@@ -41,7 +41,7 @@ class PassDriver {
       CleanUpPasses();
     }
 
-    void AddPass(Pass* pass) {
+    void AddPass(WasmPass* pass) {
       passes_.push_back(pass);
     }
 };

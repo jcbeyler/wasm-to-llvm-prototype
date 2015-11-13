@@ -78,8 +78,12 @@ WasmFunction* WasmFile::GetWasmFunction(const char* name, unsigned int line) {
 }
 
 void WasmFile::Initialize() {
-  // First thing is go through each module and mangle all names.
+  // Go through each module.
   for (auto module : modules_) {
+    // Mangle the names.
     module->MangleNames(this);
+
+    // Initialize everything.
+    module->Initialize();
   }
 }
