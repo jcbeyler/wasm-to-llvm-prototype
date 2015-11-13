@@ -14,6 +14,7 @@ float_exprs.wast
 float_literals.wast
 float_memory.wast
 float_misc.wast
+forward.wast
 functions.wast
 i32.wast
 i64.wast
@@ -22,3 +23,4 @@ int_literals.wast
 left-to-right.wast
 memory_redundancy.wast
 names.wast
+unreachable.wast

@@ -135,6 +135,8 @@ class IfExpression : public Expression {
     Expression* false_cond_;
     bool should_merge_;
 
+    llvm::Value* TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder);
+
   public:
     IfExpression(Expression* c, Expression* t, Expression* f = nullptr) :
       cond_(c), true_cond_(t), false_cond_(f), should_merge_(true) {

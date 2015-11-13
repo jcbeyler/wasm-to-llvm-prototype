@@ -136,9 +136,24 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   return builder.CreateCall(callee, args, return_name);
 }
 
+llvm::Value* IfExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
+  llvm::Type* type = value->getType();
+
+  if (type->isIntegerTy(1) == false) {
+    llvm::Type* dest_type = llvm::Type::getInt1Ty(llvm::getGlobalContext());
+
+    // We need to cast this one.
+    return HandleTypeCasts(value, type, dest_type, true, builder);
+  }
+
+  // Nothing to be done.
+  return value;
+}
+
 llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   // Start by generating the condition.
   llvm::Value* cond_value = cond_->Codegen(fct, builder);
+  cond_value = TransformCondition(cond_value, builder);
 
   llvm::Function* llvm_fct = fct->GetFunction();
 
@@ -284,13 +299,19 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
 }
 
 llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  llvm::Value* res = nullptr;
+
   // For now, there is no reason to really care about block.
   for (std::list<Expression*>::const_iterator it = list_->begin(); it != list_->end(); it++) {
     Expression* expr = *it;
-    expr->Codegen(fct, builder);
+    res = expr->Codegen(fct, builder);
+
+    if (dynamic_cast<ReturnExpression*>(expr) != nullptr) {
+      break;
+    }
   }
 
-  return nullptr;
+  return res;
 }
 
 llvm::Value* BreakExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
