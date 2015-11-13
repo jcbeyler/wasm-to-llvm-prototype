@@ -36,14 +36,15 @@ int main(int argc, char** argv) {
 
   FILE* f = freopen(argv[1], "r", stdin);
   assert(f != nullptr);
-  yyparse();
 
-  BISON_PRINT("Done Parsing %s\n", argv[1]);
+  if (yyparse() == 0) {
+    BISON_PRINT("Done Parsing %s\n", argv[1]);
 
-  WasmFile* file = Globals::Get()->GetWasmFile();
+    WasmFile* file = Globals::Get()->GetWasmFile();
 
-  Driver driver(file);
-  driver.Drive();
+    Driver driver(file);
+    driver.Drive();
+  }
 
   return EXIT_SUCCESS;
 }
