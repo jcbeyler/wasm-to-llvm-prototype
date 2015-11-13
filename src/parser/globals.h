@@ -14,6 +14,9 @@
 // limitations under the License.
 */
 
+#ifndef H_GLOBALS
+#define H_GLOBALS
+
 #include <memory>
 
 #include "wasm_file.h"
@@ -64,3 +67,5 @@ class Globals {
       return g_variables_.get();
     }
 };
+
+#endif

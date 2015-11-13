@@ -93,7 +93,6 @@ void WasmModule::Generate() {
   for (auto it : functions_) {
     WasmFunction& fct = *it;
 
-    fct.GeneratePrototype(this);
     fct.Generate();
 
     assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
@@ -156,6 +155,11 @@ void WasmModule::Initialize() {
 
   // Now generate the memory base.
   GenerateMemoryBaseFunction();
+
+  // Generate the prototypes.
+  for (auto it : functions_) {
+    it->GeneratePrototype(this);
+  }
 }
 
 std::string WasmModule::GetMemoryBaseFunctionName() const {

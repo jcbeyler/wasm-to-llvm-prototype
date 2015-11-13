@@ -3,7 +3,7 @@
 # It does what needs to be done for now...
 
 EXE = llvm_wasm
-HEADERS = $(wildcard src/*h) $(wildcard src/parser/*h) $(wildcard src/parser/*h)
+HEADERS = $(wildcard src/*h) $(wildcard src/parser/*h) $(wildcard src/passes/*h)
 GENERATED = obj/lex.yy.c obj/wasm.tab.cpp
 GENERATED_OBJ = obj/lex.yy.o obj/wasm.tab.o
 SRC_OBJ = $(patsubst src/%.cpp, obj/%.o, $(wildcard src/*.cpp))

@@ -22,6 +22,10 @@ class WasmFunction;
 
 class WasmPass {
   public:
+    virtual const char* GetName() const {
+      return "Unnamed pass";
+    }
+
     // Gate determines if we do this.
     virtual bool Gate(WasmFunction* fct) {
       (void) fct;

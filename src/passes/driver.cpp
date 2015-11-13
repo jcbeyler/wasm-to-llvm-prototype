@@ -21,11 +21,11 @@
 void Driver::Drive() {
   PassDriver driver(file_);
 
-  // Run the driver of passes.
-  driver.Drive();
-
   // First initialize the file data structures.
   file_->Initialize();
+
+  // Run the driver of passes.
+  driver.Drive();
 
   // Then generate the file code.
   file_->Generate();
