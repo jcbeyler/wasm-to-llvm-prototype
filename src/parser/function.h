@@ -138,7 +138,7 @@ class WasmFunction {
     void PopulateAllocas(llvm::IRBuilder<>& builder);
     llvm::AllocaInst* Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
 
-    void Generate(WasmModule* module);
+    void Generate();
     void GeneratePrototype(WasmModule* module);
     void Populate();
 
