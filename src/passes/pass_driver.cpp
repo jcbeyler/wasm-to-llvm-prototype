@@ -17,6 +17,7 @@
 #include <list>
 #include <vector>
 
+#include "basic.h"
 #include "debug.h"
 #include "pass.h"
 #include "pass_driver.h"
@@ -46,6 +47,7 @@ void PassDriver::RunPasses() {
 void PassDriver::RunPassesOnFunction(WasmFunction* fct) {
   // Before running the passes.
   for (auto elem : passes_) {
+    PASS_DRIVER_PRINT("Running pass %s\n", elem->GetName()); 
     if (elem->Gate(fct) == true) {
       // Call the three callbacks.
       void* data = elem->PreRun(fct);
@@ -60,4 +62,10 @@ void PassDriver::CleanUpPasses() {
   for (auto elem : passes_) {
     elem->CleanUp();
   }
+}
+
+void PassDriver::PopulatePasses() {
+  UnreachablePass* unreachable = new UnreachablePass();
+
+  AddPass(unreachable);
 }

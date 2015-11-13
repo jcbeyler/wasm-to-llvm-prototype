@@ -127,7 +127,7 @@ class WasmFunction {
       return module_;
     }
 
-    void Walk(void (*fct) (Expression*, void*), void* data);
+    bool Walk(bool (*fct) (Expression*, void*), void* data);
 
     llvm::AllocaInst* GetVariable(const char* name) const;
     llvm::AllocaInst* GetVariable(size_t idx) const;

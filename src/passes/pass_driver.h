@@ -14,6 +14,9 @@
 // limitations under the License.
 */
 
+#ifndef H_PASS_DRIVER
+#define H_PASS_DRIVER
+
 #include <vector>
 
 // Forward declaration.
@@ -30,9 +33,11 @@ class PassDriver {
     void RunPasses();
     void CleanUpPasses();
     void RunPassesOnFunction(WasmFunction* fct);
+    void PopulatePasses();
 
   public:
     PassDriver(WasmFile* f) : file_(f) {
+      PopulatePasses();
     }
 
     void Drive() {
@@ -45,3 +50,5 @@ class PassDriver {
       passes_.push_back(pass);
     }
 };
+
+#endif

@@ -14,22 +14,20 @@
 // limitations under the License.
 */
 
-#include "driver.h"
-#include "pass_driver.h"
-#include "wasm_file.h"
+// File contains very basic passes.
+#ifndef H_BASIC
+#define H_BASIC
 
-void Driver::Drive() {
-  PassDriver driver(file_);
+#include "pass.h"
 
-  // First initialize the file data structures.
-  file_->Initialize();
+class UnreachablePass : public WasmPass {
+  public:
+    virtual const char* GetName() const {
+      return "Unreachable pass";
+    }
 
-  // Run the driver of passes.
-  driver.Drive();
+    // Unreachable only needs to have the run method.
+    virtual void Run(WasmFunction* fct, void* data);
+};
 
-  // Then generate the file code.
-  file_->Generate();
-
-  // Dump for debug.
-  file_->Print();
-}
+#endif

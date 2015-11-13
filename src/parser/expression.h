@@ -58,13 +58,18 @@ class Unop : public Expression {
       BISON_PRINT(")");
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
 
-      fct(this, data);
-      if (only_ != nullptr) {
-        only_->Walk(fct, data);
+      if (fct(this, data) == false) {
+        return false;
       }
+
+      if (only_ != nullptr) {
+        return only_->Walk(fct, data);
+      }
+
+      return true;
     }
 };
 
@@ -109,13 +114,17 @@ class SetLocal : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
-      fct(this, data);
+      if (fct(this, data) == false) {
+        return false;
+      }
 
       if (value_ != nullptr) {
-        value_->Walk(fct, data);
+        return value_->Walk(fct, data);
       }
+
+      return true;
     }
 };
 
@@ -124,10 +133,25 @@ class IfExpression : public Expression {
     Expression* cond_;
     Expression* true_cond_;
     Expression* false_cond_;
+    bool should_merge_;
+
+    llvm::Value* TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder);
 
   public:
     IfExpression(Expression* c, Expression* t, Expression* f = nullptr) :
-      cond_(c), true_cond_(t), false_cond_(f) {
+      cond_(c), true_cond_(t), false_cond_(f), should_merge_(true) {
+    }
+
+    void SetTrue(Expression* expr) {
+      true_cond_ = expr;
+    }
+
+    void SetFalse(Expression* expr) {
+      false_cond_ = expr;
+    }
+
+    void SetShouldMerge(bool b) {
+      should_merge_ = b;
     }
 
     virtual void Dump(int tabs = 0) const {
@@ -160,21 +184,31 @@ class IfExpression : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
-      fct(this, data);
+      if (fct(this, data) == false) {
+        return false;
+      }
 
       if (cond_ != nullptr) {
-        cond_->Walk(fct, data);
+        if (cond_->Walk(fct, data) == false) {
+          return false;
+        }
       }
 
       if (true_cond_ != nullptr) {
-        true_cond_->Walk(fct, data);
+        if (true_cond_->Walk(fct, data) == false) {
+          return false;
+        }
       }
 
       if (false_cond_ != nullptr) {
-        false_cond_->Walk(fct, data);
+        if (false_cond_->Walk(fct, data) == false) {
+          return false;
+        }
       }
+
+      return true;
     }
 };
 
@@ -263,13 +297,19 @@ class CallExpression : public Expression {
       BISON_PRINT(")");
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
-      fct(this, data);
+      if (fct(this, data) == false) {
+        return false;
+      }
 
       for (auto elem : *params_) {
-        elem->Walk(fct, data);
+        if (elem->Walk(fct, data) == false) {
+          return false;
+        }
       }
+
+      return true;
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
@@ -296,13 +336,20 @@ class ReturnExpression : public Expression {
       return result_;
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
 
-      fct(this, data);
-      if (result_ != nullptr) {
-        result_->Walk(fct, data);
+      if (fct(this, data) == false) {
+        return false;
       }
+
+      if (result_ != nullptr) {
+        if (result_->Walk(fct, data) == false) {
+          return false;
+        }
+      }
+
+      return true;
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
@@ -340,16 +387,23 @@ class LoopExpression : public Expression {
       return true;
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
 
-      fct(this, data);
+      if (fct(this, data) == false) {
+        return false;
+      }
+
       for(std::list<Expression*>::iterator it = loop_->begin();
           it != loop_->end();
           it++) {
         Expression* expr = *it;
-        expr->Walk(fct, data);
+        if (expr->Walk(fct, data) == false) {
+          return false;
+        }
       }
+
+      return true;
     }
 
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
@@ -380,6 +434,22 @@ class LabelExpression : public Expression {
     }
 
     virtual bool GoesToTheLine() const {
+      return true;
+    }
+
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
+      assert(fct != nullptr);
+
+      if (fct(this, data) == false) {
+        return false;
+      }
+
+      if (expr_ != nullptr) {
+        if (expr_->Walk(fct, data) == false) {
+          return false;
+        }
+      }
+
       return true;
     }
 
@@ -439,16 +509,23 @@ class BlockExpression : public Expression {
       }
     }
 
-    virtual void Walk(void (*fct)(Expression*, void*), void* data) {
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
       assert(fct != nullptr);
 
-      fct(this, data);
+      if (fct(this, data) == false) {
+        return false;
+      }
+
       for(std::list<Expression*>::const_iterator iter = list_->begin();
                                                  iter != list_->end();
                                                  iter++) {
         auto elem = *iter;
-        elem->Walk(fct, data);
+        if (elem->Walk(fct, data) == false) {
+          return false;
+        }
       }
+
+      return false;
     }
 
     virtual bool GoesToTheLine() const {

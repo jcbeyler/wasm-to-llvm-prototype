@@ -93,10 +93,12 @@ void WasmModule::Generate() {
   for (auto it : functions_) {
     WasmFunction& fct = *it;
 
-    fct.GeneratePrototype(this);
     fct.Generate();
 
-    assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
+    if (llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == true) {
+      BISON_PRINT("Problem with method %s\n", fct.GetName().c_str());
+      assert(0);
+    }
   }
 
   // Run the optimizations.
@@ -156,6 +158,11 @@ void WasmModule::Initialize() {
 
   // Now generate the memory base.
   GenerateMemoryBaseFunction();
+
+  // Generate the prototypes.
+  for (auto it : functions_) {
+    it->GeneratePrototype(this);
+  }
 }
 
 std::string WasmModule::GetMemoryBaseFunctionName() const {

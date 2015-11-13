@@ -242,6 +242,12 @@ void WasmFunction::Generate() {
     Expression* exp = iter;
     last = exp->Codegen(this, builder);
     is_last_return = (dynamic_cast<ReturnExpression*>(exp) != nullptr);
+
+    // If it is a return, we stop generation here.
+    //  LLVM does not like having a return and then something else afterwards.
+    if (is_last_return == true) {
+      break;
+    }
   }
 
   // For the last one, if it is not a return and our method has a result, this becomes our result.
@@ -372,10 +378,14 @@ void WasmFunction::MangleFunctionName(WasmModule* module) {
   name_ = end_name;
 }
 
-void WasmFunction::Walk(void (*fct)(Expression*, void*), void* data) {
+bool WasmFunction::Walk(bool (*fct)(Expression*, void*), void* data) {
   for (auto elem : ast_) {
     fct(elem, data);
 
-    elem->Walk(fct, data);
+    if (elem->Walk(fct, data) == false) {
+      return false;
+    }
   }
+
+  return true;
 }

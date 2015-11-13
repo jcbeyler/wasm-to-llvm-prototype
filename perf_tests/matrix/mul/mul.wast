@@ -91,8 +91,8 @@
                       (get_local 7)
                       (i32.const 4))))
 
-    (return (i32.load (get_local 6)))
-   ) ;; Function block end.
+    ) ;; Function block end.
+   (return (i32.load (get_local 6)))
   )
 
   (func $setter (param i32) (result i32)
@@ -167,8 +167,8 @@
        )
      )
 
-    (return (i32.const 0))
    ) ;; Function block end.
+   (return (i32.const 0))
   )
 
   (export "multiply" $multiply)

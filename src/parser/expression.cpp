@@ -136,9 +136,28 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   return builder.CreateCall(callee, args, return_name);
 }
 
+llvm::Value* IfExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
+  llvm::Type* type = value->getType();
+
+  if (type->isIntegerTy(1) == false) {
+    if (type->isFloatingPointTy()) {
+      llvm::Value* zero = llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(0.0));;
+      // Not sure ordered is what we want but let us assume for now.
+      return builder.CreateFCmpONE(value, zero, "cmp_zero");
+    } else {
+      llvm::Value* zero = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(type->getIntegerBitWidth(), 0, false));
+      return builder.CreateICmpNE(value, zero, "cmp_zero");
+    }
+  }
+
+  // Nothing to be done.
+  return value;
+}
+
 llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   // Start by generating the condition.
   llvm::Value* cond_value = cond_->Codegen(fct, builder);
+  cond_value = TransformCondition(cond_value, builder);
 
   llvm::Function* llvm_fct = fct->GetFunction();
 
@@ -195,21 +214,26 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
 
   // Result is the true_result except if there is an else.
   Value* result = true_result;
-  if (false_result != nullptr) {
-    // Now add a phi node for both sides. And that will be the result.
 
-    // But first what type?
-    llvm::Type* merge_type = true_result->getType();
+  if (true_result == nullptr) {
+    result = false_result;
+  } else {
+    if (should_merge_ == true && false_result != nullptr) {
+      // Now add a phi node for both sides. And that will be the result.
 
-    // TODO: this is not enough even... but it should bring me back here fast...
-    assert(merge_type == false_result->getType());
+      // But first what type?
+      llvm::Type* merge_type = true_result->getType();
 
-    PHINode* merge_phi = builder.CreatePHI(merge_type, 2, "iftmp");
+      // TODO: this is not enough even... but it should bring me back here fast...
+      assert(merge_type == false_result->getType());
 
-    merge_phi->addIncoming(true_result, true_bb);
-    merge_phi->addIncoming(false_result, false_bb);
+      PHINode* merge_phi = builder.CreatePHI(merge_type, 2, "iftmp");
 
-    result = merge_phi;
+      merge_phi->addIncoming(true_result, true_bb);
+      merge_phi->addIncoming(false_result, false_bb);
+
+      result = merge_phi;
+    }
   }
 
   return result;
@@ -283,13 +307,19 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
 }
 
 llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  llvm::Value* res = nullptr;
+
   // For now, there is no reason to really care about block.
   for (std::list<Expression*>::const_iterator it = list_->begin(); it != list_->end(); it++) {
     Expression* expr = *it;
-    expr->Codegen(fct, builder);
+    res = expr->Codegen(fct, builder);
+
+    if (dynamic_cast<ReturnExpression*>(expr) != nullptr) {
+      break;
+    }
   }
 
-  return nullptr;
+  return res;
 }
 
 llvm::Value* BreakExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
