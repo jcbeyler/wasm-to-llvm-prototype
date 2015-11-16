@@ -56,5 +56,6 @@
   BISON_PRINT(__VA_ARGS__);
 
 void PrintLine(int line);
+void PrintLine(const char* name, int line);
 
 #endif

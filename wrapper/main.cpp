@@ -23,6 +23,7 @@
 #include <iostream>
 #include <limits>
 
+#include "debug.h"
 
 extern "C" {
   jmp_buf env;
@@ -73,7 +74,7 @@ extern "C" {
   }
 }
 
-int main(void) {
+int main(int argc, const char** argv) {
   int res = -1;
 
   // Call the glue first.
@@ -86,6 +87,13 @@ int main(void) {
     fprintf(stderr, "Executed script, success\n");
   } else {
     fprintf(stderr, "Executed script, failure for assertion line %d\n", res);
+
+    if (argc < 2) {
+      fprintf(stderr, "No information on file used\n");
+    } else {
+      PrintLine(argv[1], res);
+    }
+
     return EXIT_FAILURE;
   }
 }

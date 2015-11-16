@@ -61,7 +61,7 @@ for name in $list; do
     done
 
     # Create the test exec.
-    g++ obj/wasm_module*s wrapper/main.cpp -o obj/testit -std=gnu++0x
+    g++ obj/wasm_module*s wrapper/main.cpp src/print_line.cpp -o obj/testit -std=gnu++0x -Isrc
 
     if [ $? -ne 0 ]; then
       echo "Build of test $f failed. Bailing."
@@ -69,7 +69,7 @@ for name in $list; do
     fi
 
     # Run the test.
-    obj/testit
+    obj/testit $f
 
     if [ $? -ne 0 ]; then
       echo "Test failed: $f. Bailing."

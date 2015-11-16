@@ -70,52 +70,6 @@ class ReallyDivRem : public Binop {
     }
 };
 
-// Here we have a local version of an Expression class to handle the special case of SHR.
-class ReallyShift : public Binop {
-  protected:
-    bool is_right_shift_;
-
-  public:
-    ReallyShift(Expression* l, Expression* r, bool right = true, bool sign = false, ETYPE type = VOID) :
-      Binop(new Operation(right ? SHR_OPER : SHL_OPER, sign, type), l, r), is_right_shift_(right) {
-    }
-
-    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-      assert(left_ != nullptr && right_ != nullptr);
-      Value* lv = left_->Codegen(fct, builder);
-      Value* rv = right_->Codegen(fct, builder);
-
-      if (lv == nullptr || rv == nullptr) {
-        return nullptr;
-      }
-
-      // Get the type.
-      ETYPE old_type = operation_->GetType();
-
-      // If it's void, we have a bit more work to do.
-      llvm::Type* lt = lv->getType();
-      llvm::Type* rt = rv->getType();
-
-      ETYPE type = HandleType(lt, rt);
-
-      if (old_type != type) {
-        operation_->SetType(type);
-      }
-
-      bool is_signed = operation_->GetSignedOrOrdered();
-
-      if (is_right_shift_) {
-        if (!is_signed) {
-          return builder.CreateLShr(lv, rv, "lshr");
-        } else {
-          return builder.CreateAShr(lv, rv, "ashr");
-        }
-      } else {
-        return builder.CreateShl(lv, rv, "shl");
-      }
-    }
-};
-
 ETYPE Binop::HandleType(llvm::Type* lt, llvm::Type* rt) {
   // If type is not void, the type should be the same as lt.
   llvm::Type* chosen = lt;
@@ -182,7 +136,13 @@ llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuil
     case XOR_OPER:
       return builder.CreateXor(lv, rv, "xortmp");
     case SHL_OPER:
+      return builder.CreateShl(lv, rv, "shltmp");
     case SHR_OPER:
+      if (!is_signed) {
+        return builder.CreateLShr(lv, rv, "shrtmp");
+      } else {
+        return builder.CreateAShr(lv, rv, "shrtmp");
+      }
     case REM_OPER:
       // We should not arrive here anymore.
       assert(0);
@@ -194,80 +154,6 @@ llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuil
   }
 
   return nullptr;
-}
-
-llvm::Value* Binop::HandleShift(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool right) {
-  // We have more work to do here: check if we are above the limit.
-  // Webassembly spec says: if the shift amount is above the width, then
-  //   we need to explicitly put 0 here.
-  // Also, we interpret the rv value as unsigned, but let's be honest:
-  //   if it is negative, that means it's huge, and just set to 0.
-  // Therefore, the solution that is the simplest is to just test if it is above the width:
-  //    If it is negative, since we consider unsigned, it will be bigger than 32 or 64
-  //    Otherwise we need to handle it.
-  ETYPE type = operation_->GetType();
-  int left_width = (type == INT_32) ? 32 : 64;
-
-  // Assertion: left shift is unsigned.
-  assert(right == true || sign == false);
-
-  // shr value, amount: depends on signed or unsigned.
-  if (!sign) {
-    // In the case of unsigned, we do:
-    /*
-     *   // Testing unsigned too big or negative in one step.
-     *   if (amount >= value's width)
-     *    0
-     *   else
-     *    really do the shift
-     */
-    ValueHolder* vh = new ValueHolder(left_width);
-    Const* width = new Const(type, vh);
-
-    Operation* op = new Operation(GE_OPER, false, type);
-    Binop* cond = new Binop(op, right_, width);
-
-    vh = new ValueHolder(left_width - 1);
-
-    vh = new ValueHolder(0);
-    Const* zero = new Const(type, vh);
-
-    // False path here goes back to right_ here.
-    ReallyShift* rsr = new ReallyShift(left_, right_, right, sign, type);
-
-    IfExpression* width_check = new IfExpression(cond, zero, rsr);
-
-    // Now generate the code.
-    return width_check->Codegen(fct, builder);
-  } else {
-    /*
-     *  // Testing unsigned too big or negative in one step.
-     *   if (amount >= value's width)
-     *    shr value, 31
-     *   else
-     *    really do the shift
-     */
-    ValueHolder* vh = new ValueHolder(left_width);
-    Const* width = new Const(type, vh);
-
-    Operation* op = new Operation(GE_OPER, false, type);
-    Binop* cond = new Binop(op, right_, width);
-
-    vh = new ValueHolder(left_width - 1);
-    Const* width_minus_one = new Const(type, vh);
-
-    // False path here goes back to right_ here.
-    ReallyShift* rsr = new ReallyShift(left_, width_minus_one, true, true, type);
-
-    // Create the actual shift.
-    ReallyShift* original_rsr = new ReallyShift(left_, right_, true, true, type);
-
-    // False path here goes back to the real shift here.
-    IfExpression* width_check = new IfExpression(cond, rsr, original_rsr);
-
-    // Now generate the code.
-    return width_check->Codegen(fct, builder);
-  }
 }
 
 llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, bool sign, bool div) {
@@ -364,26 +250,15 @@ llvm::Value* Binop::HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builde
 }
 
 llvm::Value* Binop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  // TODO factorize this with the ReallyShift version.
   OPERATION op = operation_->GetOperation();
   ETYPE type = operation_->GetType();
 
   // We have a couple of exception and special handling:
   switch (op) {
-    case SHR_OPER:
-    case SHL_OPER: {
-      // In case we have a SHR, we have work due to a difference between
-      //   WASM and LLVM decisions on shift count handling.
-        bool right = (op == SHR_OPER);
-        // Right shift is the only one that can be signed.
-        bool sign = (right == true && operation_->GetSignedOrOrdered());
-        return HandleShift(fct, builder, sign, right);
-    }
-
     case REM_OPER:
     case DIV_OPER: {
       if (type == INT_32 || type == INT_64) {
-        // In case we have a SHR, we have work due to a difference between
+        // In case we have a division, we have work due to a difference between
         //   WASM and LLVM decisions on shift count handling.
         bool div = (op == DIV_OPER);
         // Right shift is the only one that can be signed.
