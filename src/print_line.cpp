@@ -14,11 +14,34 @@
 // limitations under the License.
 */
 
+#include <fstream>
+#include <iostream>
+
 #include "debug.h"
-#include "globals.h"
 
-void PrintLine(int line) {
-  const char* name = Globals::Get()->GetFileName();
-  PrintLine(name, line);
+void PrintLine(const char* name, int line) {
+  std::ifstream input(name);
+  std::string s;
+
+  // Get the line before the parameter.
+  int cnt = 0;
+  while (cnt < line - 1) {
+    bool b = std::getline(input, s);
+
+    if (b == false) {
+      std::cerr << "Error finding the error line" << std::endl;
+      return;
+    }
+    cnt++;
+  }
+
+  // Now get the error line.
+  bool b = std::getline(input, s);
+  if (b == false) {
+    std::cerr << "Error finding the error line" << std::endl;
+    return;
+  }
+
+  // Finally print the line.
+  std::cerr << "Error in this line: " << s << std::endl;
 }
-
