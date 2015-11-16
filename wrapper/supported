@@ -23,4 +23,5 @@ int_literals.wast
 left-to-right.wast
 memory_redundancy.wast
 names.wast
+nan-propagation.wast
 unreachable.wast
