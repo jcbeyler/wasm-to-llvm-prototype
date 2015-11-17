@@ -15,6 +15,8 @@
 */
 
 #include <iostream>
+#include <unistd.h>
+#include <getopt.h>
 
 #include "debug.h"
 #include "driver.h"
@@ -25,8 +27,30 @@ int yyparse();
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <filename> " << std::endl;
+    std::cerr << "Usage: " << argv[0] << "<filename> " << std::endl;
+    std::cerr << "\tOption is: -n/--no-opt, no verification and no optimizations\n" << std::endl;
     return EXIT_FAILURE;
+  }
+
+  struct option long_options[] = {
+    {"no-opt", 0, 0, 'n'},
+    {nullptr, 0, 0, 0}
+  };
+
+  while (1) {
+    int idx = 0;
+    int c = getopt_long(argc, argv, "n", long_options, &idx);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+      case 'n':
+        std::cerr << "Disabling Verifications and Optimizations" << std::endl;
+        Globals::Get()->DisableVerificationOptimization();
+        break;
+    }
   }
 
   // Set up global variable singleton.
@@ -34,7 +58,7 @@ int main(int argc, char** argv) {
 
   BISON_PRINT("Parsing %s\n", argv[1]);
 
-  FILE* f = freopen(argv[1], "r", stdin);
+  FILE* f = freopen(argv[argc - 1], "r", stdin);
   assert(f != nullptr);
 
   if (yyparse() == 0) {

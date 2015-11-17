@@ -26,11 +26,21 @@ class Globals {
     int line_cnt_;
     char* name_;
     WasmFile* file_;
+    bool disable_verif_opt_;
 
     static std::unique_ptr<Globals> g_variables_;
 
   public:
-    Globals() : line_cnt_(1), name_(nullptr), file_(nullptr) {
+    Globals() : line_cnt_(1), name_(nullptr), file_(nullptr),
+                disable_verif_opt_(false) {
+    }
+
+    void DisableVerificationOptimization() {
+      disable_verif_opt_ = true;
+    }
+
+    bool GetDisableVerificationOptimization() const {
+      return disable_verif_opt_;
     }
 
     void SetWasmFile(WasmFile* f) {
