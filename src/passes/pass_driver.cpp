@@ -47,7 +47,7 @@ void PassDriver::RunPasses() {
 void PassDriver::RunPassesOnFunction(WasmFunction* fct) {
   // Before running the passes.
   for (auto elem : passes_) {
-    PASS_DRIVER_PRINT("Running pass %s\n", elem->GetName()); 
+    PASS_DRIVER_PRINT("Running pass %s\n", elem->GetName());
     if (elem->Gate(fct) == true) {
       // Call the three callbacks.
       void* data = elem->PreRun(fct);

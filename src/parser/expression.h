@@ -585,4 +585,38 @@ class Unreachable : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
+
+class CaseExpression : public Expression {
+  protected:
+    const char* var_;
+    Expression* expr_;
+
+  public:
+    CaseExpression(const char* var, Expression* expr) :
+      var_(var), expr_(expr) {
+    }
+};
+
+class SwitchExpression : public Expression {
+  protected:
+    const char* name_;
+    Expression* selector_;
+    std::list<Variable*>* index_table_;
+    Variable* default_;
+    std::list<CaseExpression*>* cases_;
+
+  public:
+    SwitchExpression(const char* name, Expression* selector,
+                     std::list<Variable*>* index_table,
+                     Variable* default_case,
+                     std::list<CaseExpression*>* cases) :
+                     name_(name), selector_(selector), index_table_(index_table),
+                     default_(default_case), cases_(cases) {
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      assert(0);
+      return nullptr;
+    }
+};
 #endif

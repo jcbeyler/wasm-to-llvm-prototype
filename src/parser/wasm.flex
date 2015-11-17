@@ -30,7 +30,7 @@
 
 DIGIT    [0-9]
 HEX_DIGIT    [0-9a-fA-F]
-ID       [a-z_A-Z][\.\-A-Za-z0-9_]*
+ID       [0-9a-z_A-Z][\.\-A-Za-z0-9_]*
 
 %%
 
@@ -408,6 +408,21 @@ i64 {
   LEX_DEBUG_PRINT("Type %s\n", yytext);
   yylval.l = INT_64;
   return TYPE;
+}
+
+tableswitch {
+  LEX_DEBUG_PRINT("TABLE SWITCH\n");
+  return TABLE_SWITCH;
+}
+
+table {
+  LEX_DEBUG_PRINT("TABLE\n");
+  return TABLE;
+}
+
+case {
+  LEX_DEBUG_PRINT("CASE\n");
+  return CASE;
 }
 
 [-+]{0,1}0x{HEX_DIGIT}+ {
