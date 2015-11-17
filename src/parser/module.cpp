@@ -19,6 +19,7 @@
 
 #include "debug.h"
 #include "function.h"
+#include "globals.h"
 #include "module.h"
 #include "wasm_file.h"
 #include "utility.h"
@@ -95,18 +96,22 @@ void WasmModule::Generate() {
 
     fct.Generate();
 
-    if (llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == true) {
-      BISON_PRINT("Problem with method %s\n", fct.GetName().c_str());
-      assert(0);
+    if (Globals::Get()->GetDisableVerificationOptimization() == false) {
+      if (llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == true) {
+        BISON_PRINT("Problem with method %s\n", fct.GetName().c_str());
+        assert(0);
+      }
     }
   }
 
-  // Run the optimizations.
-  fpm_->run(*module_);
+  if (Globals::Get()->GetDisableVerificationOptimization() == false) {
+    // Run the optimizations.
+    fpm_->run(*module_);
 
-  for (auto it : functions_) {
-    WasmFunction& fct = *it;
-    assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
+    for (auto it : functions_) {
+      WasmFunction& fct = *it;
+      assert((llvm::verifyFunction(*fct.GetFunction(), &llvm::outs()) == false));
+    }
   }
 
   // Handle now the exports.
