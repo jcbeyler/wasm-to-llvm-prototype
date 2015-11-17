@@ -72,12 +72,18 @@
               (set_local 6 (i32.add (get_local 6) (i32.const 4)))
              )
             )
+
+            ;; Next iteration.
+            (br 0)
            )
           )
 
           (set_local 5 (i32.add (get_local 5) (i32.const 4)))
          )
         )
+
+        ;; Next iteration.
+        (br 0)
        )
      )
 
@@ -158,12 +164,18 @@
               (set_local 5 (i32.add (get_local 5) (i32.const 4)))
              )
             )
+
+            ;; Next iteration.
+            (br 0)
            )
           )
 
           (set_local 4 (i32.add (get_local 4) (i32.const 4)))
          )
         )
+
+        ;; Next iteration.
+        (br 0)
        )
      )
 

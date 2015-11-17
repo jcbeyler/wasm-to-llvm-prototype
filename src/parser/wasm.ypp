@@ -43,6 +43,7 @@ extern int yylex (void);
 %}
 
 %code requires {
+  class CaseExpression;
   class CallExpression;
   class ConversionOperation;
   class Expression;
@@ -62,6 +63,18 @@ extern int yylex (void);
   class WasmModule;
   class WasmScript;
   class WasmScriptElem;
+
+  struct LoopNaming {
+    Variable* loop_name_;
+    Variable* exit_name_;
+
+    LoopNaming(Variable* loop_name = nullptr, Variable* exit_name = nullptr) :
+      loop_name_(loop_name), exit_name_(exit_name) {
+    }
+  };
+
+  class Case {
+  };
 }
 
 %union {
@@ -71,6 +84,7 @@ extern int yylex (void);
   char* string;
   void* voidptr;
 
+  CaseExpression* ca;
   CallExpression* ce;
   ConversionOperation* co;
   WasmExport* e;
@@ -79,6 +93,7 @@ extern int yylex (void);
   WasmFunction* f;
   FunctionField* ff;
   Load* ld;
+  LoopNaming* ln;
   Local* local;
   WasmModule* m;
   Operation* o;
@@ -112,25 +127,28 @@ extern int yylex (void);
 %token INVOKE_TOKEN
 %token CALL_TOKEN
 %token LOCAL_TOKEN
+%token CASE TABLE TABLE_SWITCH
 %token UNREACHABLE_TOKEN
 %token CONST
 %token LABEL
 %token MEMORY STORE LOAD
 
-%type<voidptr> FUNCTION_FIELDS
-%type<voidptr> EXPRESSIONS
+%type<voidptr> FUNCTION_FIELDS CASES LIST_CASES
+%type<voidptr> EXPRESSIONS CASE CASE_TABLE
 
 %type<b> SIGN
+%type<ca> ONE_CASE
 %type<ce> SCRIPT_INVOKE
 %type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
 %type<et> TYPE
-%type<ex> CALL BREAK BLOCK MEMORY_OPERATION
+%type<ex> CALL BREAK BLOCK MEMORY_OPERATION SWITCH
 %type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
 %type<l> RESULT INTEGER
 %type<ld> POTENTIAL_SIGNED_LOAD LOAD_POTENTIAL_SIZE
+%type<ln> LOOP_NAMING
 %type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
 %type<m> MODULE MODULE_ELEMS
 %type<o> BINOP UNOP
@@ -144,7 +162,7 @@ extern int yylex (void);
 %type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
 %type<string> FLOAT
-%type<v> VARIABLE_OR_NOT VARIABLE
+%type<v> VARIABLE_OR_NOT VARIABLE CASE_DEF
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
 %type<wf> FILE
@@ -496,9 +514,9 @@ BREAK:
   }
 
 BLOCK:
-  BLOCK_TOKEN EXPRESSIONS {
-    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($2);
-    $$ = new BlockExpression(list);
+  BLOCK_TOKEN IDENTIFIER_OR_NOT EXPRESSIONS {
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
+    $$ = new BlockExpression($2, list);
   }
 
 LOAD_POTENTIAL_SIZE:
@@ -600,10 +618,13 @@ EXPRESSION_INNER:
       LabelExpression* label = new LabelExpression(var, expr);
       $$ = label;
     } |
-    LOOP VARIABLE_OR_NOT EXPRESSIONS {
-      Variable* var = $2;
+    SWITCH { $$ = $1; } |
+    LOOP LOOP_NAMING EXPRESSIONS {
+      LoopNaming* ln = $2;
+      Variable* var = (ln != nullptr) ? ln->loop_name_ : nullptr;
+      Variable* exit_name = (ln != nullptr) ? ln->exit_name_ : nullptr;
       std::list<Expression*>* list = static_cast<std::list<Expression*>*>($3);
-      LoopExpression* loop = new LoopExpression(var, list);
+      LoopExpression* loop = new LoopExpression(var, exit_name, list);
       $$ = loop;
     } |
     MEMORY_OPERATION { $$ = $1; } |
@@ -615,6 +636,11 @@ EXPRESSION_INNER:
       $$ = return_expr;
     }
 
+LOOP_NAMING:
+  VARIABLE { $$ = new LoopNaming($1); } |
+  VARIABLE VARIABLE { $$ = new LoopNaming($2, $1); } |
+  { $$ = nullptr; }
+
 PARAM:
    PARAM_TOKEN
    LOCAL_ELEMS {
@@ -623,6 +649,49 @@ PARAM:
      }
 
 RESULT: RESULT_TOKEN TYPE { $$ = $2; }
+
+CASE_DEF:
+  '(' CASE VARIABLE ')' {
+    $$ = $3;
+  }
+
+LIST_CASES:
+  CASE_DEF LIST_CASES {
+    std::list<Variable*>* list = static_cast<std::list<Variable*>* >($2);
+    list->push_front($1);
+    $$ = list;
+  } | {
+    $$ = new std::list<Variable*>();
+  }
+
+CASE_TABLE: '(' TABLE LIST_CASES ')' {
+    $$ = $3;
+  }
+
+CASES:
+  ONE_CASE CASES {
+    // TODO.
+    CaseExpression* one_case = $1;
+    std::list<CaseExpression*>* list = static_cast<std::list<CaseExpression*>*>($2);
+    assert(list != nullptr);
+    list->push_front(one_case);
+    $$ = list;
+  } | {
+   $$ = new std::list<CaseExpression*>();
+  }
+
+ONE_CASE:
+  '(' CASE IDENTIFIER EXPRESSION ')' {
+    $$ = new CaseExpression($3, $4);
+  }
+
+SWITCH: TABLE_SWITCH IDENTIFIER_OR_NOT EXPRESSION
+        CASE_TABLE CASE_DEF
+        CASES {
+          std::list<Variable*>* case_table = static_cast<std::list<Variable*>*>($4);
+          std::list<CaseExpression*>* cases = static_cast<std::list<CaseExpression*>*>($6);
+          $$ = new SwitchExpression($2, $3, case_table, $5, cases);
+        }
 
 ASSERT:
   ASSERT_RETURN {
@@ -724,10 +793,9 @@ ASSERT_RETURN:
       // Then return -1: no problem.
       ValueHolder* vh = new ValueHolder(-1);
       Const* success = new Const(INT_32, vh);
-      ReturnExpression* return_expr = new ReturnExpression(success);
-      list->push_back(return_expr);
+      list->push_back(success);
 
-      BlockExpression* block = new BlockExpression(list);
+      BlockExpression* block = new BlockExpression(nullptr, list);
 
       $$ = new WasmAssertReturn(block);
     }
@@ -753,13 +821,10 @@ ASSERT_TRAP:
 
     // Create a string expression and push the return of it.
     StringExpression* string_expr = new StringExpression(error_msg);
-    ReturnExpression* return_expr = new ReturnExpression(string_expr);
+    list->push_back(string_expr);
 
-    list->push_back(return_expr);
-
-    // TODO still need to get line numbers.
-
-    BlockExpression* block = new BlockExpression(list);
+    // Create a block with the instructions.
+    BlockExpression* block = new BlockExpression(nullptr, list);
 
     // And create the trap with memory of the message.
     $$ = new WasmAssertTrap(block);
@@ -777,7 +842,6 @@ ASSERT_INVALID:
 %%
 
 int yyerror (const std::string& s) {
-  fprintf(stderr, "Error line %d: %s\n", Globals::Get()->GetLineCnt(), s.c_str());
   PrintLine(Globals::Get()->GetLineCnt());
   return 0;
 }

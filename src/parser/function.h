@@ -31,6 +31,7 @@
 using namespace llvm;
 
 // Forward declarations.
+class NamedExpression;
 class WasmFile;
 class WasmModule;
 
@@ -56,6 +57,8 @@ class WasmFunction {
     std::vector<Expression*> ast_;
     ETYPE result_;
 
+    std::map<llvm::BasicBlock*, NamedExpression*> named_exit_blocks_;
+
     llvm::Value* local_base_;
 
     // Protected methods.
@@ -64,7 +67,7 @@ class WasmFunction {
   public:
     WasmFunction(std::list<FunctionField*>* f = nullptr, const std::string& s = "anonymous",
                  llvm::Function* fct = nullptr, WasmModule* module = nullptr, ETYPE result = VOID) :
-      name_(s), fct_(fct), fields_(f), module_(module), result_(result), local_base_(nullptr) 
+      name_(s), fct_(fct), fields_(f), module_(module), result_(result), local_base_(nullptr)
       {
         // If anonymous, let's add a unique suffix.
         if (name_ == "anonymous") {
@@ -74,6 +77,20 @@ class WasmFunction {
           cnt++;
           name_ = oss.str();
         }
+    }
+
+    void RegisterNamedExpression(llvm::BasicBlock* bb, NamedExpression* loop) {
+      named_exit_blocks_[bb] = loop;
+    }
+
+    NamedExpression* FindNamedExpression(llvm::BasicBlock* bb) const {
+      auto iter = named_exit_blocks_.find(bb);
+
+      if (iter == named_exit_blocks_.end()) {
+        return nullptr;
+      }
+
+      return iter->second;
     }
 
     void PushLabel(llvm::BasicBlock* bb) {

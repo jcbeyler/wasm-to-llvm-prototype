@@ -355,13 +355,25 @@ class ReturnExpression : public Expression {
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 
-class LoopExpression : public Expression {
+// Base class for Loops and Blocks to register incoming phi nodes.
+class NamedExpression {
+  protected:
+    std::vector<std::pair<llvm::Value*, llvm::BasicBlock*> > incoming_phis_;
+
+  public:
+    void AddIncomingPhi(llvm::Value* value, llvm::BasicBlock* bb);
+
+    llvm::Value* HandlePhiNodes(llvm::IRBuilder<>& builder) const;
+};
+
+class LoopExpression : public Expression, public NamedExpression {
   protected:
     Variable* var_;
+    Variable* exit_name_;
     std::list<Expression*>* loop_;
 
   public:
-    LoopExpression(Variable* var, std::list<Expression*>* list) : var_(var), loop_(list) {
+    LoopExpression(Variable* var, Variable* exit_name, std::list<Expression*>* list) : var_(var), exit_name_(exit_name), loop_(list) {
     }
 
     virtual void Dump(int tabs = 0) const {
@@ -483,12 +495,13 @@ class BreakExpression : public Expression {
     llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 
-class BlockExpression : public Expression {
+class BlockExpression : public Expression, public NamedExpression {
   protected:
     std::list<Expression*>* list_;
+    const char* name_;
 
   public:
-    BlockExpression(std::list<Expression*>* l) : list_(l) {
+    BlockExpression(const char* name, std::list<Expression*>* l) : name_(name), list_(l) {
     }
 
     virtual void Dump(int tabs = 0) const {
@@ -584,5 +597,39 @@ class Unreachable : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+};
+
+class CaseExpression : public Expression {
+  protected:
+    const char* var_;
+    Expression* expr_;
+
+  public:
+    CaseExpression(const char* var, Expression* expr) :
+      var_(var), expr_(expr) {
+    }
+};
+
+class SwitchExpression : public Expression {
+  protected:
+    const char* name_;
+    Expression* selector_;
+    std::list<Variable*>* index_table_;
+    Variable* default_;
+    std::list<CaseExpression*>* cases_;
+
+  public:
+    SwitchExpression(const char* name, Expression* selector,
+                     std::list<Variable*>* index_table,
+                     Variable* default_case,
+                     std::list<CaseExpression*>* cases) :
+                     name_(name), selector_(selector), index_table_(index_table),
+                     default_(default_case), cases_(cases) {
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      assert(0);
+      return nullptr;
+    }
 };
 #endif

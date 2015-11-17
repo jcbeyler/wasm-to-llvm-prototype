@@ -44,17 +44,19 @@ static void HandleIfUnreachable(Expression* expr) {
     Expression* true_expr = if_expr->GetTrue();
     Expression* false_expr = if_expr->GetFalse();
 
-    // We want to know if there is an unreachable directly in these blocks.
-    //   This is not perfect because if there is a complex CFG here,
-    //   this won't solve it yet.
-    bool true_has_unreachable = false;
-    true_expr->Walk(FindUnreachable, &true_has_unreachable);
+    if (true_expr != nullptr && false_expr != nullptr) {
+      // We want to know if there is an unreachable directly in these blocks.
+      //   This is not perfect because if there is a complex CFG here,
+      //   this won't solve it yet.
+      bool true_has_unreachable = false;
+      true_expr->Walk(FindUnreachable, &true_has_unreachable);
 
-    bool false_has_unreachable = false;
-    false_expr->Walk(FindUnreachable, &false_has_unreachable);
+      bool false_has_unreachable = false;
+      false_expr->Walk(FindUnreachable, &false_has_unreachable);
 
-    if (true_has_unreachable != false_has_unreachable) {
-      if_expr->SetShouldMerge(false);
+      if (true_has_unreachable != false_has_unreachable) {
+        if_expr->SetShouldMerge(false);
+      }
     }
   }
 }
