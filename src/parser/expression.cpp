@@ -174,13 +174,13 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
 
   // The other two will wait before being emitted.
   false_bb = BasicBlock::Create(llvm::getGlobalContext(), "false");
-  end_bb = BasicBlock::Create(llvm::getGlobalContext(), "end");
+  end_bb = BasicBlock::Create(llvm::getGlobalContext(), "end_if");
 
   builder.CreateCondBr(cond_value, true_bb, false_bb);
 
   // Start generating the if.
   builder.SetInsertPoint(true_bb);
-  Value* true_result = true_cond_->Codegen(fct, builder);
+  llvm::Value* true_result = true_cond_->Codegen(fct, builder);
 
   // If we do not finish with a terminator, generate a jump.
   if (dynamic_cast<TerminatorInst*>(true_result) == nullptr) {
@@ -197,14 +197,15 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
   builder.SetInsertPoint(false_bb);
 
   // We might not have one.
-  Value* false_result = nullptr;
+  llvm::Value* false_result = nullptr;
   if (false_cond_ != nullptr) {
     false_result = false_cond_->Codegen(fct, builder);
   }
 
   // Branch now to the end_bb.
   builder.CreateBr(end_bb);
-  // Come back to the true_bb.
+
+  // Come back to the false_bb.
   false_bb = builder.GetInsertBlock();
 
   // Finally handle the merge point.
@@ -215,7 +216,7 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
   // Result is the true_result except if there is an else.
   Value* result = true_result;
 
-  if (true_result == nullptr) {
+  if (true_result == nullptr || (dynamic_cast<TerminatorInst*>(true_result) != nullptr)) {
     result = false_result;
   } else {
     if (should_merge_ == true && false_result != nullptr) {
@@ -255,12 +256,12 @@ llvm::Value* LabelExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
   // Generate the code now.
   llvm::Value* res = expr_->Codegen(fct, builder);
 
-  // Now jump to the end_label.
-  builder.CreateBr(end_label);
-
   // Now add the block and set it as insert point.
   llvm::Function* llvm_fct = fct->GetFunction();
   llvm_fct->getBasicBlockList().push_back(end_label);
+
+  // Now jump to the end_label.
+  builder.CreateBr(end_label);
 
   // Now set ourselves to the end of the label.
   builder.SetInsertPoint(end_label);
@@ -276,8 +277,15 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   const char* name = (var_ != nullptr) ? var_->GetString() : "loop_block";
   llvm::BasicBlock* loop = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
 
+  const char* exit_name = (exit_name_ != nullptr) ? exit_name_->GetString() : "loop_exit_block";
+  llvm::BasicBlock* exit_block = BasicBlock::Create(llvm::getGlobalContext(), exit_name, fct->GetFunction());
+
   // Push it.
+  fct->PushLabel(exit_block);
   fct->PushLabel(loop);
+
+  // Also register for the function level that this loop is this exit block.
+  fct->RegisterNamedExpression(exit_block, this);
 
   // Jump to the loop.
   builder.CreateBr(loop);
@@ -293,39 +301,118 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
     value = expr->Codegen(fct, builder);
   }
 
-  // Create the unconditional branch back to the start.
-  builder.CreateBr(loop);
+  // If last node from the loop is not nullptr, register it.
+  if (value != nullptr) {
+    // If the last value is not a terminator.
+    if (dynamic_cast<TerminatorInst*>(value) == nullptr) {
+      builder.CreateBr(exit_block);
+      AddIncomingPhi(value, builder.GetInsertBlock());
+    }
+  }
 
   // Create a new block, it will be dead code but it will let LLVM land on its feet.
-  BasicBlock* label_dc = BasicBlock::Create(llvm::getGlobalContext(), "label_dc ", fct->GetFunction());
-  builder.SetInsertPoint(label_dc);
+  builder.SetInsertPoint(exit_block);
 
+  value = HandlePhiNodes(builder);
+
+  // Pop the labels.
+  fct->PopLabel();
   fct->PopLabel();
 
   // All is good :).
   return value;
 }
 
+void NamedExpression::AddIncomingPhi(llvm::Value* value, llvm::BasicBlock* bb) {
+  if (dynamic_cast<TerminatorInst*>(value) == nullptr) {
+    incoming_phis_.push_back(std::make_pair(value, bb));
+  }
+}
+
+llvm::Value* NamedExpression::HandlePhiNodes(llvm::IRBuilder<>& builder) const {
+  llvm::Value* value = nullptr;
+
+  // Now handle the phi nodes if we have any.
+  size_t size = incoming_phis_.size();
+  if (size > 1) {
+    // Let us assume the merge type is fine for all elements.
+    llvm::Type* merge_type = incoming_phis_[0].first->getType();
+
+    PHINode* merge_phi = builder.CreatePHI(merge_type, size, "merge_phi");
+
+    for (auto p : incoming_phis_) {
+      merge_phi->addIncoming(p.first, p.second);
+    }
+
+    value = merge_phi;
+  } else {
+    // If only one element, just return it.
+    if (size == 1) {
+      return incoming_phis_[0].first;
+    }
+  }
+
+  return value;
+}
+
 llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   llvm::Value* res = nullptr;
 
+  const char* name = name_ ? name_ : "unamed_exit_block";
+  BasicBlock* block_code  = BasicBlock::Create(llvm::getGlobalContext(), "block", fct->GetFunction());
+
+  // Create the exit block.
+  BasicBlock* exit_block_code  = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
+
+  builder.CreateBr(block_code);
+
+  builder.SetInsertPoint(block_code);
+
+  // Push it.
+  fct->PushLabel(exit_block_code);
+
+  // Also register for the function level that this loop is this exit block.
+  fct->RegisterNamedExpression(exit_block_code, this);
+
   // For now, there is no reason to really care about block.
+  bool finished_with_termination = false;
   for (std::list<Expression*>::const_iterator it = list_->begin(); it != list_->end(); it++) {
     Expression* expr = *it;
     res = expr->Codegen(fct, builder);
 
-    if (dynamic_cast<ReturnExpression*>(expr) != nullptr) {
+    // Stop if we are jumping or returning.
+    if ((dynamic_cast<ReturnExpression*>(expr) != nullptr) ||
+        (dynamic_cast<BreakExpression*>(expr) != nullptr)) {
+      finished_with_termination = true;
       break;
     }
   }
+
+  // If last node from the block is not nullptr, register it.
+  if (res != nullptr) {
+    AddIncomingPhi(res, block_code);
+  }
+
+  // Pop it.
+  fct->PopLabel();
+
+  if (finished_with_termination == false) {
+    builder.CreateBr(exit_block_code);
+  } else {
+    // In the case we did finish with termination, we generated the exit block but there is a possibility it is not used.
+    //  However it must finish with a terminator outside and we don't know if we are going towards it.
+
+    // So let's find out if someone is going there.
+  }
+
+  builder.SetInsertPoint(exit_block_code);
+
+  res = HandlePhiNodes(builder);
 
   return res;
 }
 
 llvm::Value* BreakExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  // TODO.
-  assert(expr_ == nullptr);
-
   llvm::BasicBlock* bb = nullptr;
 
   if (var_->IsString() == false) {
@@ -338,14 +425,22 @@ llvm::Value* BreakExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
 
   assert(bb != nullptr);
 
+  if (expr_ != nullptr) {
+    llvm::Value* result = expr_->Codegen(fct, builder);
+
+    if (result != nullptr) {
+      // We should push this to the named expression so that it knows about it.
+      NamedExpression* named = fct->FindNamedExpression(bb);
+
+      // If we did not find it, we will not push the information there, it is not going to a merge point...
+      if (named != nullptr) {
+        named->AddIncomingPhi(result, builder.GetInsertBlock());
+      }
+    }
+  }
+
   // We just want a jump to that block.
-  builder.CreateBr(bb);
-
-  // Create a new block, it will be dead code but it will let LLVM land on its feet.
-  BasicBlock* break_dc  = BasicBlock::Create(llvm::getGlobalContext(), "break_dc", fct->GetFunction());
-  builder.SetInsertPoint(break_dc);
-
-  return nullptr;
+  return builder.CreateBr(bb);
 }
 
 llvm::Value* ReturnExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {

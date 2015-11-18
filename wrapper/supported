@@ -1,7 +1,7 @@
-../perf_tests/matrix/mul/mul.wast
-../perf_tests/vector/daxpy/vector.wast
-../perf_tests/vector/mul/vector.wast
 ../perf_tests/sum_array/sum.wast
+../perf_tests/vector/mul/vector.wast
+../perf_tests/vector/daxpy/vector.wast
+../perf_tests/matrix/mul/mul.wast
 conversions.wast
 endianness.wast
 exports.wast

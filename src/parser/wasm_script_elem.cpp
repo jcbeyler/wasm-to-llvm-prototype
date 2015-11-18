@@ -114,7 +114,12 @@ void WasmAssertReturn::Codegen(WasmFile* file) {
 
   wasm_module->AddFunctionAndRegister(wasm_fct);
 
-  expr_->Codegen(wasm_fct, builder);
+  llvm::Value* value = expr_->Codegen(wasm_fct, builder);
+
+  // If we have a value and it is not a terminator instruction, create the return.
+  if (value != nullptr && dynamic_cast<TerminatorInst*>(value) == nullptr) {
+    builder.CreateRet(value);
+  }
 }
 
 void WasmAssertTrap::Codegen(WasmFile* file) {
@@ -140,5 +145,6 @@ void WasmAssertTrap::Codegen(WasmFile* file) {
 
   wasm_module->AddFunctionAndRegister(wasm_fct);
 
-  expr_->Codegen(wasm_fct, builder);
+  llvm::Value* res = expr_->Codegen(wasm_fct, builder);
+  builder.CreateRet(res);
 }

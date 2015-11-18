@@ -31,6 +31,7 @@
 using namespace llvm;
 
 // Forward declarations.
+class NamedExpression;
 class WasmFile;
 class WasmModule;
 
@@ -56,6 +57,8 @@ class WasmFunction {
     std::vector<Expression*> ast_;
     ETYPE result_;
 
+    std::map<llvm::BasicBlock*, NamedExpression*> named_exit_blocks_;
+
     llvm::Value* local_base_;
 
     // Protected methods.
@@ -74,6 +77,20 @@ class WasmFunction {
           cnt++;
           name_ = oss.str();
         }
+    }
+
+    void RegisterNamedExpression(llvm::BasicBlock* bb, NamedExpression* loop) {
+      named_exit_blocks_[bb] = loop;
+    }
+
+    NamedExpression* FindNamedExpression(llvm::BasicBlock* bb) const {
+      auto iter = named_exit_blocks_.find(bb);
+
+      if (iter == named_exit_blocks_.end()) {
+        return nullptr;
+      }
+
+      return iter->second;
     }
 
     void PushLabel(llvm::BasicBlock* bb) {

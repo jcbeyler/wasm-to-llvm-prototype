@@ -514,9 +514,9 @@ BREAK:
   }
 
 BLOCK:
-  BLOCK_TOKEN VARIABLE_OR_NOT EXPRESSIONS {
+  BLOCK_TOKEN IDENTIFIER_OR_NOT EXPRESSIONS {
     std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
-    $$ = new BlockExpression(list);
+    $$ = new BlockExpression($2, list);
   }
 
 LOAD_POTENTIAL_SIZE:
@@ -622,8 +622,10 @@ EXPRESSION_INNER:
     LOOP LOOP_NAMING EXPRESSIONS {
       LoopNaming* ln = $2;
       Variable* var = (ln != nullptr) ? ln->loop_name_ : nullptr;
+      Variable* exit_name = (ln != nullptr) ? ln->exit_name_ : nullptr;
+
       std::list<Expression*>* list = static_cast<std::list<Expression*>*>($3);
-      LoopExpression* loop = new LoopExpression(var, list);
+      LoopExpression* loop = new LoopExpression(var, exit_name, list);
       $$ = loop;
     } |
     MEMORY_OPERATION { $$ = $1; } |
@@ -792,10 +794,9 @@ ASSERT_RETURN:
       // Then return -1: no problem.
       ValueHolder* vh = new ValueHolder(-1);
       Const* success = new Const(INT_32, vh);
-      ReturnExpression* return_expr = new ReturnExpression(success);
-      list->push_back(return_expr);
+      list->push_back(success);
 
-      BlockExpression* block = new BlockExpression(list);
+      BlockExpression* block = new BlockExpression(nullptr, list);
 
       $$ = new WasmAssertReturn(block);
     }
@@ -821,13 +822,10 @@ ASSERT_TRAP:
 
     // Create a string expression and push the return of it.
     StringExpression* string_expr = new StringExpression(error_msg);
-    ReturnExpression* return_expr = new ReturnExpression(string_expr);
+    list->push_back(string_expr);
 
-    list->push_back(return_expr);
-
-    // TODO still need to get line numbers.
-
-    BlockExpression* block = new BlockExpression(list);
+    // Create a block with the instructions.
+    BlockExpression* block = new BlockExpression(nullptr, list);
 
     // And create the trap with memory of the message.
     $$ = new WasmAssertTrap(block);
@@ -845,7 +843,6 @@ ASSERT_INVALID:
 %%
 
 int yyerror (const std::string& s) {
-  fprintf(stderr, "Error line %d: %s\n", Globals::Get()->GetLineCnt(), s.c_str());
   PrintLine(Globals::Get()->GetLineCnt());
   return 0;
 }

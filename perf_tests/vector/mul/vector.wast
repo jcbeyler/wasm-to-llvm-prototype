@@ -36,6 +36,8 @@
         (set_local 0 (i32.sub (get_local 0) (i32.const 1)))
        )
       )
+
+      (br 0)
      )
     )
    )
@@ -71,6 +73,8 @@
               (set_local 2 (i32.sub (get_local 2) (i32.const 4)))
             )
           )
+
+          (br 0)
         )
       )
     )
