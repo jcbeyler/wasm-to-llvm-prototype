@@ -639,7 +639,7 @@ EXPRESSION_INNER:
 
 LOOP_NAMING:
   VARIABLE { $$ = new LoopNaming($1); } |
-  VARIABLE VARIABLE { $$ = new LoopNaming($1, $2); } |
+  VARIABLE VARIABLE { $$ = new LoopNaming($2, $1); } |
   { $$ = nullptr; }
 
 PARAM:
