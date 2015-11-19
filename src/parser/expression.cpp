@@ -41,7 +41,7 @@ llvm::Value* GetLocal::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
 
   assert(alloca != nullptr);
 
-  llvm::Value* res = builder.CreateLoad(alloca->getAllocatedType(), alloca, name);
+  llvm::Value* res = builder.CreateLoad(alloca->getAllocatedType(), alloca, "get_local");
   return res;
 }
 
@@ -331,6 +331,7 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
 }
 
 void NamedExpression::AddIncomingPhi(llvm::Value* value, llvm::BasicBlock* bb) {
+  assert(value != nullptr);
   if (dynamic_cast<TerminatorInst*>(value) == nullptr) {
     incoming_phis_.push_back(std::make_pair(value, bb));
   }
@@ -410,6 +411,7 @@ llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
     //  However it must finish with a terminator outside and we don't know if we are going towards it.
 
     // So let's find out if someone is going there.
+    // TODO.
   }
 
   builder.SetInsertPoint(exit_block_code);
@@ -455,95 +457,6 @@ llvm::Value* ReturnExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& bui
   llvm::Value* result = result_->Codegen(fct, builder);
   assert(result != nullptr);
   return fct->HandleReturn(result, builder);
-}
-
-llvm::Value* SwitchExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  std::vector<BasicBlock*> case_blocks;
-  const char* name = name_ != nullptr ? name_ : "switch_exit";
-
-  llvm::BasicBlock* switch_block = builder.GetInsertBlock();
-
-  llvm::BasicBlock* exit_block = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
-
-  // Push it.
-  fct->PushLabel(exit_block);
-  fct->RegisterNamedExpression(exit_block, this);
-
-  // Start by generating the cases.
-  llvm::Value* last_result = nullptr;
-  llvm::BasicBlock* default_block = nullptr;
-  std::map<std::string, llvm::BasicBlock*> association;
-
-  for (auto elem : *cases_) {
-    llvm::Value* result = elem->Codegen(last_result, this, fct, builder);
-
-    // Remember the default one.
-    association[elem->GetIdentifier()] = builder.GetInsertBlock();
-
-    last_result = result;
-  }
-
-  // Get the default one.
-  default_block = association[default_->GetString()];
-
-  assert(default_block != nullptr);
-
-  // Before switching to new block, should we generate a jump?
-  if (last_result != nullptr && dynamic_cast<TerminatorInst*>(last_result) == nullptr) {
-    AddIncomingPhi(last_result, builder.GetInsertBlock());
-    builder.CreateBr(exit_block);
-  }
-
-  // Pop label.
-  fct->PopLabel();
-
-  // Set ourselves back to the switch block right now.
-  builder.SetInsertPoint(switch_block);
-
-  // Create the switch.
-  llvm::Value* value = selector_->Codegen(fct, builder);
-  SwitchInst* switch_inst = builder.CreateSwitch(value, default_block, cases_->size());
-
-  // Now add the cases.
-  int i = 0;
-
-  for (std::list<Variable*>::const_iterator index_it = index_table_->begin();
-                                            index_it != index_table_->end();
-                                            index_it++) {
-    llvm::ConstantInt* case_value = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, i, false));
-    Variable* var = *index_it;
-    llvm::BasicBlock* bb = association[var->GetString()];
-
-    switch_inst->addCase(case_value, bb);
-    i++;
-  }
-
-  // Now set ourselves to the exit_block.
-  builder.SetInsertPoint(exit_block);
-
-  llvm::Value* res = HandlePhiNodes(builder);
-  return res;
-}
-
-llvm::Value* CaseExpression::Codegen(llvm::Value* last_value, SwitchExpression* switch_expr, WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  // Create a BasicBlock name.
-  std::string s_name = "case_";
-  s_name += id_;
-
-  // Now create the block.
-  llvm::BasicBlock* case_block = BasicBlock::Create(llvm::getGlobalContext(), s_name.c_str(), fct->GetFunction());
-
-  // Register the block.
-  switch_expr->RegisterGeneratedCase(id_, case_block);
-
-  // Before switching to new block, should we generate a jump?
-  if (last_value != nullptr && dynamic_cast<TerminatorInst*>(last_value) == nullptr) {
-    builder.CreateBr(case_block);
-  }
-
-  // Now generate the code.
-  builder.SetInsertPoint(case_block);
-  return expr_->Codegen(fct, builder);
 }
 
 llvm::Value* Unreachable::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {

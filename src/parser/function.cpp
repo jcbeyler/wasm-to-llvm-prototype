@@ -205,7 +205,12 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
 }
 
 llvm::AllocaInst* WasmFunction::CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder) {
-  return builder.CreateAlloca(type, 0, name);
+  llvm::AllocaInst* res = builder.CreateAlloca(type, 0, name);
+  llvm::Value* zero = Constant::getNullValue(type);
+
+  builder.CreateStore(zero, res);
+
+  return res;
 }
 
 void WasmFunction::GetBaseMemory(llvm::IRBuilder<>& builder) {
