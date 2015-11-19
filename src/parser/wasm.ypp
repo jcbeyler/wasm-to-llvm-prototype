@@ -689,6 +689,7 @@ ONE_CASE:
 SWITCH: TABLE_SWITCH IDENTIFIER_OR_NOT EXPRESSION
         CASE_TABLE CASE_DEF
         CASES {
+          const char* name = $2;
           std::list<Variable*>* case_table = static_cast<std::list<Variable*>*>($4);
           std::list<CaseExpression*>* cases = static_cast<std::list<CaseExpression*>*>($6);
           $$ = new SwitchExpression($2, $3, case_table, $5, cases);
