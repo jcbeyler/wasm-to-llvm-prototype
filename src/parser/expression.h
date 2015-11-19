@@ -28,6 +28,16 @@
 class SwitchExpression;
 class WasmFunction;
 
+class Nop : public Expression {
+  public:
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      (void) fct;
+      (void) builder;
+
+      return nullptr;
+    }
+};
+
 class Unop : public Expression {
   protected:
     Operation* operation_;
