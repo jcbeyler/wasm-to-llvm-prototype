@@ -28,6 +28,16 @@
 class SwitchExpression;
 class WasmFunction;
 
+class Nop : public Expression {
+  public:
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      (void) fct;
+      (void) builder;
+
+      return nullptr;
+    }
+};
+
 class Unop : public Expression {
   protected:
     Operation* operation_;
@@ -598,47 +608,5 @@ class Unreachable : public Expression {
     }
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
-};
-
-class CaseExpression : public Expression {
-  protected:
-    const char* id_;
-    Expression* expr_;
-
-  public:
-    CaseExpression(const char* id, Expression* expr) :
-      id_(id), expr_(expr) {
-    }
-
-    const char* GetIdentifier() const {
-      return id_;
-    }
-
-    llvm::Value* Codegen(llvm::Value* last_value, SwitchExpression* switch_expr, WasmFunction* fct, llvm::IRBuilder<>& builder);
-};
-
-class SwitchExpression : public Expression, public NamedExpression {
-  protected:
-    const char* name_;
-    Expression* selector_;
-    std::list<Variable*>* index_table_;
-    Variable* default_;
-    std::list<CaseExpression*>* cases_;
-    std::map<std::string, llvm::BasicBlock*> generated_cases_;
-
-  public:
-    SwitchExpression(const char* name, Expression* selector,
-                     std::list<Variable*>* index_table,
-                     Variable* default_case,
-                     std::list<CaseExpression*>* cases) :
-                     name_(name), selector_(selector), index_table_(index_table),
-                     default_(default_case), cases_(cases) {
-    }
-
-    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
-
-    void RegisterGeneratedCase(const char* name, llvm::BasicBlock* bb) {
-      generated_cases_[name] = bb;
-    }
 };
 #endif

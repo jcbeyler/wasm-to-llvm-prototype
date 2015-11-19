@@ -33,6 +33,7 @@
 #include "module.h"
 #include "operation.h"
 #include "simple.h"
+#include "switch_expression.h"
 #include "wasm_script.h"
 #include "wasm_script_elem.h"
 #include "wasm_file.h"
@@ -43,6 +44,7 @@ extern int yylex (void);
 %}
 
 %code requires {
+  class CaseDefinition;
   class CaseExpression;
   class CallExpression;
   class ConversionOperation;
@@ -72,9 +74,6 @@ extern int yylex (void);
       loop_name_(loop_name), exit_name_(exit_name) {
     }
   };
-
-  class Case {
-  };
 }
 
 %union {
@@ -84,7 +83,8 @@ extern int yylex (void);
   char* string;
   void* voidptr;
 
-  CaseExpression* ca;
+  CaseDefinition* cad;
+  CaseExpression* cae;
   CallExpression* ce;
   ConversionOperation* co;
   WasmExport* e;
@@ -106,7 +106,7 @@ extern int yylex (void);
   WasmFile* wf;
 }
 
-%token BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -137,7 +137,8 @@ extern int yylex (void);
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE
 
 %type<b> SIGN
-%type<ca> ONE_CASE
+%type<cad> CASE_DEF
+%type<cae> ONE_CASE
 %type<ce> SCRIPT_INVOKE
 %type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
@@ -162,7 +163,7 @@ extern int yylex (void);
 %type<st> POTENTIAL_SIGNED_STORE STORE_POTENTIAL_SIZE
 %type<string> IDENTIFIER_OR_NOT IDENTIFIER STRING
 %type<string> FLOAT
-%type<v> VARIABLE_OR_NOT VARIABLE CASE_DEF
+%type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
 %type<wf> FILE
@@ -563,6 +564,7 @@ MEMORY_OPERATION:
     $$ = st; }
 
 EXPRESSION_INNER:
+    NOP { $$ = new Nop(); } |
     BINOP EXPRESSION EXPRESSION {
       Operation* op = $1;
       Expression* left = $2;
@@ -653,16 +655,19 @@ RESULT: RESULT_TOKEN TYPE { $$ = $2; }
 
 CASE_DEF:
   '(' CASE VARIABLE ')' {
-    $$ = $3;
+    $$ = new VariableCaseDefinition($3);
+  } |
+  '(' BREAK ')' {
+    $$ = new ExpressionCaseDefinition($2);
   }
 
 LIST_CASES:
   CASE_DEF LIST_CASES {
-    std::list<Variable*>* list = static_cast<std::list<Variable*>* >($2);
+    std::list<CaseDefinition*>* list = static_cast<std::list<CaseDefinition*>* >($2);
     list->push_front($1);
     $$ = list;
   } | {
-    $$ = new std::list<Variable*>();
+    $$ = new std::list<CaseDefinition*>();
   }
 
 CASE_TABLE: '(' TABLE LIST_CASES ')' {
@@ -671,7 +676,6 @@ CASE_TABLE: '(' TABLE LIST_CASES ')' {
 
 CASES:
   ONE_CASE CASES {
-    // TODO.
     CaseExpression* one_case = $1;
     std::list<CaseExpression*>* list = static_cast<std::list<CaseExpression*>*>($2);
     assert(list != nullptr);
@@ -682,15 +686,16 @@ CASES:
   }
 
 ONE_CASE:
-  '(' CASE IDENTIFIER EXPRESSION ')' {
-    $$ = new CaseExpression($3, $4);
+  '(' CASE IDENTIFIER EXPRESSIONS ')' {
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($4);
+    $$ = new CaseExpression($3, list);
   }
 
 SWITCH: TABLE_SWITCH IDENTIFIER_OR_NOT EXPRESSION
         CASE_TABLE CASE_DEF
         CASES {
           const char* name = $2;
-          std::list<Variable*>* case_table = static_cast<std::list<Variable*>*>($4);
+          std::list<CaseDefinition*>* case_table = static_cast<std::list<CaseDefinition*>*>($4);
           std::list<CaseExpression*>* cases = static_cast<std::list<CaseExpression*>*>($6);
           $$ = new SwitchExpression($2, $3, case_table, $5, cases);
         }
