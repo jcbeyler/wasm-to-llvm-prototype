@@ -172,7 +172,7 @@ llvm::Value* SwitchExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& bui
     if (expr != nullptr) {
       // Ok we have this block to generate.
       std::string name = HandleExpressionCase(expr, values, association, fct, builder);
-      
+
       // Finally, replace this ExpressionCaseDefinition with a VariableCaseDefinition
       Variable* var = new Variable(name.c_str());
       VariableCaseDefinition* var_case = new VariableCaseDefinition(var);

@@ -656,7 +656,7 @@ RESULT: RESULT_TOKEN TYPE { $$ = $2; }
 CASE_DEF:
   '(' CASE VARIABLE ')' {
     $$ = new VariableCaseDefinition($3);
-  } | 
+  } |
   '(' BREAK ')' {
     $$ = new ExpressionCaseDefinition($2);
   }
