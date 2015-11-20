@@ -43,5 +43,5 @@ void PrintLine(const char* name, int line) {
   }
 
   // Finally print the line.
-  std::cerr << "Error in this line: " << s << std::endl;
+  std::cerr << "Error in this line number " << line << ": " << s << std::endl;
 }
