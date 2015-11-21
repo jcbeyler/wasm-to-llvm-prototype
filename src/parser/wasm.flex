@@ -344,8 +344,8 @@ assert_trap {
   return ASSERT_TRAP_TOKEN;
 }
 
-assert_invalid {
-  LEX_DEBUG_PRINT("ASSERT INVALID\n");
+\(assert_invalid[^\n]* {
+  LEX_DEBUG_PRINT("ASSERT INVALID: %s\n", yytext);
   return ASSERT_INVALID_TOKEN;
 }
 

@@ -48,6 +48,7 @@ class WasmFunction {
     WasmModule* module_;
 
     std::vector<llvm::BasicBlock*> labels_;
+    std::map<std::string, llvm::BasicBlock*> mapped_labels_;
 
     // We have redundancy-ish here: since Wasm can do index or named, this helps make it
     //   transparent and easier to maintain.
@@ -93,7 +94,8 @@ class WasmFunction {
       return iter->second;
     }
 
-    void PushLabel(llvm::BasicBlock* bb) {
+    void PushLabel(const std::string& name, llvm::BasicBlock* bb) {
+      mapped_labels_[name] = bb;
       labels_.push_back(bb);
     }
 

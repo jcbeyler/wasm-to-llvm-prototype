@@ -307,6 +307,14 @@ llvm::BasicBlock* WasmFunction::GetLabel(size_t from_last) {
 }
 
 llvm::BasicBlock* WasmFunction::GetLabel(const char* name) {
+  // First loop if we find it in the mapped association.
+  std::map<std::string, llvm::BasicBlock*>::const_iterator it;
+  it = mapped_labels_.find(name);
+
+  if (it != mapped_labels_.end()) {
+    return it->second;
+  }
+
   for (auto elem : labels_) {
     if (elem->getName() == name) {
       return elem;

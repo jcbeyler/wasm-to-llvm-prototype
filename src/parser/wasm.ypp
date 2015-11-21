@@ -838,11 +838,7 @@ ASSERT_TRAP:
   }
 
 ASSERT_INVALID:
-  '('
-  ASSERT_INVALID_TOKEN
-  MODULE
-  STRING
-  ')' {
+  ASSERT_INVALID_TOKEN {
     $$ = nullptr;
   }
 

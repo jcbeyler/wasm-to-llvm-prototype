@@ -251,7 +251,7 @@ llvm::Value* LabelExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
   // For now, just ignore it for code generation.
   llvm::BasicBlock* end_label = BasicBlock::Create(llvm::getGlobalContext(), name);
 
-  fct->PushLabel(end_label);
+  fct->PushLabel(name, end_label);
   fct->RegisterNamedExpression(end_label, this);
 
   // Generate the code now.
@@ -288,8 +288,8 @@ llvm::Value* LoopExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   llvm::BasicBlock* exit_block = BasicBlock::Create(llvm::getGlobalContext(), exit_name, fct->GetFunction());
 
   // Push it.
-  fct->PushLabel(exit_block);
-  fct->PushLabel(loop);
+  fct->PushLabel(exit_name, exit_block);
+  fct->PushLabel(name, loop);
 
   // Also register for the function level that this loop is this exit block.
   fct->RegisterNamedExpression(exit_block, this);
@@ -366,10 +366,10 @@ llvm::Value* NamedExpression::HandlePhiNodes(llvm::IRBuilder<>& builder) const {
 llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   llvm::Value* res = nullptr;
 
-  const char* name = name_ ? name_ : "unamed_exit_block";
   BasicBlock* block_code  = BasicBlock::Create(llvm::getGlobalContext(), "block", fct->GetFunction());
 
   // Create the exit block.
+  const char* name = name_ ? name_ : "unamed_exit_block";
   BasicBlock* exit_block_code  = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
 
   builder.CreateBr(block_code);
@@ -377,7 +377,7 @@ llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
   builder.SetInsertPoint(block_code);
 
   // Push it.
-  fct->PushLabel(exit_block_code);
+  fct->PushLabel(name, exit_block_code);
 
   // Also register for the function level that this loop is this exit block.
   fct->RegisterNamedExpression(exit_block_code, this);
