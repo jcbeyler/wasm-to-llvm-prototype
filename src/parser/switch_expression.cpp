@@ -121,14 +121,14 @@ std::string SwitchExpression::HandleExpressionCase(ExpressionCaseDefinition* exp
 
 llvm::Value* SwitchExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   std::vector<BasicBlock*> case_blocks;
-  const char* name = name_ != nullptr ? name_ : "switch_exit";
 
   llvm::BasicBlock* switch_block = builder.GetInsertBlock();
 
+  const char* name = name_ != nullptr ? name_ : "switch_exit";
   llvm::BasicBlock* exit_block = BasicBlock::Create(llvm::getGlobalContext(), name, fct->GetFunction());
 
   // Push it.
-  fct->PushLabel(exit_block);
+  fct->PushLabel(name, exit_block);
   fct->RegisterNamedExpression(exit_block, this);
 
   // Start by generating the cases.
