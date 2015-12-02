@@ -369,6 +369,10 @@ assert_invalid {
       parenthesis--;
     }
 
+    if (c == '\n') {
+      Globals::Get()->IncrementLineCnt();
+    }
+
     if (parenthesis == 0) {
       // Put back the closing parenthesis.
       unput(c);
