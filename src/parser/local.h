@@ -16,7 +16,7 @@
 #ifndef H_LOCAL
 #define H_LOCAL
 
-#include <list>
+#include <deque>
 
 #include "utility.h"
 
@@ -50,7 +50,7 @@ struct LocalElem {
 
 class Local {
   protected:
-    std::list<LocalElem*> elems_;
+    std::deque<LocalElem*> elems_;
 
   public:
     Local() {
@@ -63,7 +63,7 @@ class Local {
 
     void AddElem(ETYPE type, char* s = nullptr) {
       LocalElem* elem = new LocalElem(type, s);
-      elems_.push_back(elem);
+      elems_.push_front(elem);
     }
 
     void Dump(const std::string& prefix, int tabs = 0) {
@@ -71,7 +71,7 @@ class Local {
       size_t max = elems_.size();
       size_t i;
 
-      for(std::list<LocalElem*>::const_iterator iter = elems_.begin();
+      for(std::deque<LocalElem*>::const_iterator iter = elems_.begin();
                                                 iter != elems_.end();
                                                 iter++) {
         const LocalElem* elem = *iter;
@@ -89,7 +89,7 @@ class Local {
       (void) prefix;
     }
 
-    const std::list<LocalElem*>& GetList() const {
+    const std::deque<LocalElem*>& GetList() const {
       return elems_;
     }
 

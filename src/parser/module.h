@@ -76,7 +76,7 @@ class WasmModule {
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
       module_(module), fpm_(fpm), file_(file),
-      memory_(0), memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
+      memory_(-1), memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
         static int cnt = 0;
         std::ostringstream oss;
         oss << "wasm_module_" << cnt;
@@ -132,7 +132,7 @@ class WasmModule {
     }
 
     void AddMemory(size_t value, size_t align = 0) {
-      assert(memory_ == 0);
+      assert(memory_ == -1);
       memory_ = value;
       align_ = align;
     }
