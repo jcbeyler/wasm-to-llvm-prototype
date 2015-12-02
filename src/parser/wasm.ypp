@@ -131,7 +131,7 @@ extern int yylex (void);
 %token UNREACHABLE_TOKEN
 %token CONST
 %token LABEL
-%token MEMORY STORE LOAD
+%token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN
 
 %type<voidptr> FUNCTION_FIELDS CASES LIST_CASES
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE
@@ -230,6 +230,9 @@ MODULE:
     $$ = $3;
   }
 
+SEGMENTS:
+  '(' SEGMENT INTEGER STRING ')' SEGMENTS |
+
 MODULE_ELEMS:
   FUNCTION MODULE_ELEMS {
     WasmModule* module = $2;
@@ -243,13 +246,13 @@ MODULE_ELEMS:
     module->AddExport(e);
     $$ = module;
   } |
-   '(' MEMORY INTEGER ')' MODULE_ELEMS {
-    WasmModule* module = $5;
+   '(' MEMORY INTEGER SEGMENTS ')' MODULE_ELEMS {
+    WasmModule* module = $6;
     module->AddMemory($3);
     $$ = module;
   } |
-   '(' MEMORY INTEGER INTEGER ')' MODULE_ELEMS {
-    WasmModule* module = $6;
+   '(' MEMORY INTEGER INTEGER SEGMENTS ')' MODULE_ELEMS {
+    WasmModule* module = $7;
     module->AddMemory($3, $4);
     $$ = module;
   } | {
@@ -544,20 +547,23 @@ POTENTIAL_SIGNED_STORE:
     $$ = st;
   }
 
+ALIGN_OR_NOT:
+  ALIGN_TOKEN '=' INTEGER |
+
 MEMORY_OPERATION:
-  TYPE '.' POTENTIAL_SIGNED_LOAD EXPRESSION {
+  TYPE '.' POTENTIAL_SIGNED_LOAD ALIGN_OR_NOT EXPRESSION {
     Load* ld = $3;
     ld->SetType($1);
-    ld->SetAddress($4);
+    ld->SetAddress($5);
 
     // Size might need to get updated here.
     ld->UpdateSize();
     $$ = ld; } |
-  TYPE '.' POTENTIAL_SIGNED_STORE EXPRESSION EXPRESSION {
+  TYPE '.' POTENTIAL_SIGNED_STORE ALIGN_OR_NOT EXPRESSION EXPRESSION {
     Store* st = $3;
     st->SetType($1);
-    st->SetAddress($4);
-    st->SetValue($5);
+    st->SetAddress($5);
+    st->SetValue($6);
 
     // Size might need to get updated here.
     st->UpdateSize();
@@ -838,7 +844,9 @@ ASSERT_TRAP:
   }
 
 ASSERT_INVALID:
-  ASSERT_INVALID_TOKEN {
+  '('
+  ASSERT_INVALID_TOKEN 
+  ')' {
     $$ = nullptr;
   }
 
