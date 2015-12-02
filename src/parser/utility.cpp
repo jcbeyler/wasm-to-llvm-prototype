@@ -31,6 +31,12 @@ const char* GetETypeName(ETYPE type) {
       return "f32";
     case FLOAT_64:
       return "f64";
+    case INT_1:
+      return "i1";
+    case INT_8:
+      return "i8";
+    case INT_16:
+      return "i16";
     case INT_32:
       return "i32";
     case INT_64:
@@ -45,6 +51,12 @@ const char* GetETypeName(ETYPE type) {
 
 size_t GetTypeSize(ETYPE type) {
   switch (type) {
+    case INT_1:
+      return 1;
+    case INT_8:
+      return 8;
+    case INT_16:
+      return 16;
     case FLOAT_32:
     case INT_32:
       return 32;
@@ -146,6 +158,12 @@ llvm::Type* ConvertType(ETYPE type) {
       return llvm::Type::getFloatTy(llvm::getGlobalContext());
     case FLOAT_64:
       return llvm::Type::getDoubleTy(llvm::getGlobalContext());
+    case INT_1:
+      return llvm::Type::getInt1Ty(llvm::getGlobalContext());
+    case INT_8:
+      return llvm::Type::getInt8Ty(llvm::getGlobalContext());
+    case INT_16:
+      return llvm::Type::getInt16Ty(llvm::getGlobalContext());
     case INT_32:
       return llvm::Type::getInt32Ty(llvm::getGlobalContext());
     case INT_64:
@@ -332,6 +350,12 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
       return FLOAT_64;
     case llvm::Type::IntegerTyID:
       switch (type->getIntegerBitWidth()) {
+        case 1:
+          return INT_1;
+        case 8:
+          return INT_8;
+        case 16:
+          return INT_16;
         case 32:
           return INT_32;
         case 64:

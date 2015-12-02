@@ -165,6 +165,11 @@ max {
   return MAX;
 }
 
+segment {
+  LEX_DEBUG_PRINT("SEGMENT\n");
+  return SEGMENT;
+}
+
 memory {
   LEX_DEBUG_PRINT("MEMORY\n");
   return MEMORY;
@@ -344,8 +349,32 @@ assert_trap {
   return ASSERT_TRAP_TOKEN;
 }
 
-\(assert_invalid[^\n]* {
+assert_invalid {
   LEX_DEBUG_PRINT("ASSERT INVALID: %s\n", yytext);
+  // We actually want to go skip this right now so just parse everything until EOF
+  //   or the closing parenthesis.
+  int parenthesis = 1;
+  int c;
+
+  do {
+    // Read next character.
+    c = yyinput();
+
+    // Handle parenthesis count.
+    if (c == '(') {
+      parenthesis++;
+    }
+
+    if (c == ')') {
+      parenthesis--;
+    }
+
+    if (parenthesis == 0) {
+      // Put back the closing parenthesis.
+      unput(c);
+      break;
+    }
+  } while (c != 0);
   return ASSERT_INVALID_TOKEN;
 }
 
@@ -358,16 +387,6 @@ module {
   LEX_DEBUG_PRINT("MODULE\n");
   return MODULE_TOKEN;
 }
-
-%{
-/* Skipping switch, call, destruct */
-
-// Skipping load/store
-
-// Skipping const, unop, binop, relop, cvtop
-
-// Skipping case
-%}
 
 func {
   LEX_DEBUG_PRINT("FUNC\n");
@@ -383,6 +402,11 @@ store {
   LEX_DEBUG_PRINT("STORE\n");
   yylval.l = STORE_OPER;
   return STORE;
+}
+
+align {
+  LEX_DEBUG_PRINT("ALIGN\n");
+  return ALIGN_TOKEN;
 }
 
 load {
@@ -516,7 +540,7 @@ ${ID} {
   Globals::Get()->IncrementLineCnt();
 }
 
-" " {
+[ \t] {
 }
 
 . {
