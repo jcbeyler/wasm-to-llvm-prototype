@@ -183,7 +183,7 @@ std::string WasmModule::GetMemoryBaseName() const {
 }
 
 void WasmModule::GenerateMemoryBaseFunction() {
-  if (memory_ != 0) {
+  if (memory_ != -1) {
     // This will work until threading is not available but it should work well.
     std::string name = GetMemoryBaseFunctionName();
 

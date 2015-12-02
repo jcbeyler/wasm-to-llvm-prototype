@@ -32,7 +32,7 @@ void WasmFunction::FindParams(std::vector<llvm::Type*>& llvm_params) const {
     ParamField* pf = *it;
     Local* local = pf->GetLocal();
 
-    const std::list<LocalElem*>& list = local->GetList();
+    const std::deque<LocalElem*>& list = local->GetList();
 
     for (auto elem : list) {
       llvm_params.push_back(ConvertType(elem->GetType()));
@@ -118,7 +118,7 @@ void WasmFunction::GeneratePrototype(WasmModule* module) {
 
 void WasmFunction::PopulateLocalHolders(llvm::IRBuilder<>& builder) {
   for (auto local : locals_) {
-    const std::list<LocalElem*>& elems = local->GetList();
+    const std::deque<LocalElem*>& elems = local->GetList();
 
     for (auto elem : elems) {
       // Get the type.
@@ -167,7 +167,7 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
     ParamField& pf = *it;
     Local* local = pf.GetLocal();
 
-    const std::list<LocalElem*>& list = local->GetList();
+    const std::deque<LocalElem*>& list = local->GetList();
 
     for(auto elem : list) {
       elems.push_back(elem);
@@ -217,7 +217,7 @@ void WasmFunction::GetBaseMemory(llvm::IRBuilder<>& builder) {
   // Only care about this if we have a memory to the module.
   //  We could check if the function would use it and use that but this should be
   //   sufficient as LLVM can remove the call if it is unused.
-  if (module_->GetMemory() != 0) {
+  if (module_->GetMemory() != -1) {
     // Ok, then what we want is ask it for the address.
     llvm::GlobalVariable* base = module_->GetBaseMemory();
 
