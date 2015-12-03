@@ -64,8 +64,11 @@ class WasmModule {
     std::string name_;
     std::string hash_name_;
 
+    // Difference here of signess to have -1 as a possible value for non-defined memory size.
     int64_t memory_;
-    int align_;
+    uint64_t max_memory_;
+    std::list<Segment*>* segments_;
+
     llvm::GlobalVariable* memory_pointer_;
     llvm::Function* memory_allocator_fct_;
 
@@ -76,7 +79,8 @@ class WasmModule {
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
       module_(module), fpm_(fpm), file_(file),
-      memory_(-1), memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
+      memory_(-1), max_memory_(~0), segments_(nullptr),
+      memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
         static int cnt = 0;
         std::ostringstream oss;
         oss << "wasm_module_" << cnt;
@@ -131,10 +135,17 @@ class WasmModule {
       file.close();
     }
 
-    void AddMemory(size_t value, size_t align = 0) {
+    void AddMemory(size_t value, std::list<Segment*>* segments) {
       assert(memory_ == -1);
       memory_ = value;
-      align_ = align;
+      segments_ = segments;
+    }
+
+    void AddMemory(size_t value, int max, std::list<Segment*>* segments) {
+      assert(memory_ == -1);
+      memory_ = value;
+      max_memory_ = max;
+      segments_ = segments;
     }
 
     int GetMemory() const {

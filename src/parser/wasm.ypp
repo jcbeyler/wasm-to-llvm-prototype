@@ -134,7 +134,7 @@ extern int yylex (void);
 %token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN
 
 %type<voidptr> FUNCTION_FIELDS CASES LIST_CASES
-%type<voidptr> EXPRESSIONS CASE CASE_TABLE
+%type<voidptr> EXPRESSIONS CASE CASE_TABLE SEGMENTS
 
 %type<b> SIGN
 %type<cad> CASE_DEF
@@ -231,7 +231,20 @@ MODULE:
   }
 
 SEGMENTS:
-  '(' SEGMENT INTEGER STRING ')' SEGMENTS |
+  '(' SEGMENT INTEGER STRING ')' SEGMENTS {
+    std::list<Segment*>* list = static_cast<std::list<Segment*> *>($6);
+
+    int start = $3;
+    char* data = $4;
+
+    Segment* segment = new Segment(start, data);
+    list->push_back(segment);
+
+    $$ = list;
+  } | {
+    std::list<Segment*>* list = new std::list<Segment*>();
+    $$ = list;
+  }
 
 MODULE_ELEMS:
   FUNCTION MODULE_ELEMS {
@@ -248,12 +261,17 @@ MODULE_ELEMS:
   } |
    '(' MEMORY INTEGER SEGMENTS ')' MODULE_ELEMS {
     WasmModule* module = $6;
-    module->AddMemory($3);
+    std::list<Segment*>* list = static_cast<std::list<Segment*> *>($4);
+    int size = $3;
+    module->AddMemory(size, list);
     $$ = module;
   } |
    '(' MEMORY INTEGER INTEGER SEGMENTS ')' MODULE_ELEMS {
     WasmModule* module = $7;
-    module->AddMemory($3, $4);
+    std::list<Segment*>* list = static_cast<std::list<Segment*> *>($5);
+    int size = $3;
+    int max = $4;
+    module->AddMemory(size, max, list);
     $$ = module;
   } | {
     WasmModule* wm = new WasmModule();

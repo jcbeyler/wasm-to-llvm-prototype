@@ -262,4 +262,23 @@ class ValueHolder {
     }
 };
 
+class Segment {
+  protected:
+    int start_;
+    char* data_;
+
+  public:
+    Segment(int start, char* data) :
+      start_(start), data_(data) {
+    }
+
+    int GetStart() const {
+      return start_;
+    }
+
+    char* GetData() const {
+      return data_;
+    }
+};
+
 #endif
