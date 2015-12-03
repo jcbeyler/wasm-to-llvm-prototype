@@ -511,6 +511,9 @@ case {
   LEX_DEBUG_PRINT("String %s\n", yytext);
   int len = strlen(yytext);
   yytext[len - 1] = '\0';
+
+  // This is probably not correct since a string could be hex defined and could have
+  //   a \x00. We will want to use the length to copy this around.
   yylval.string = strdup(yytext + 1);
   return STRING;
 }
