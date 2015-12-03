@@ -139,18 +139,32 @@ class SetLocal : public Expression {
     }
 };
 
-class IfExpression : public Expression {
+class ConditionalExpression : public Expression {
   protected:
     Expression* cond_;
-    Expression* true_cond_;
-    Expression* false_cond_;
-    bool should_merge_;
 
     llvm::Value* TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder);
 
   public:
+    ConditionalExpression(Expression* cond) : cond_(cond) {
+    }
+
+    Expression* GetCondition() const {
+      return cond_;
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) = 0;
+};
+
+class IfExpression : public ConditionalExpression {
+  protected:
+    Expression* true_cond_;
+    Expression* false_cond_;
+    bool should_merge_;
+
+  public:
     IfExpression(Expression* c, Expression* t, Expression* f = nullptr) :
-      cond_(c), true_cond_(t), false_cond_(f), should_merge_(true) {
+      ConditionalExpression(c), true_cond_(t), false_cond_(f), should_merge_(true) {
     }
 
     void SetTrue(Expression* expr) {
@@ -179,10 +193,6 @@ class IfExpression : public Expression {
       } else {
         BISON_TABBED_PRINT(tabs, "(IfExpression %p %p %p)", cond_, true_cond_, false_cond_);
       }
-    }
-
-    Expression* GetCondition() const {
-      return cond_;
     }
 
     Expression* GetTrue() const {
@@ -490,6 +500,39 @@ class BreakExpression : public Expression {
 
     virtual void Dump(int tabs = 0) const {
       BISON_TABBED_PRINT(tabs, "(Break");
+
+      if (var_) {
+        BISON_PRINT(" ");
+        var_->Dump();
+      }
+
+      if (expr_) {
+        BISON_PRINT("\n");
+        expr_->Dump(tabs + 1);
+      }
+      BISON_PRINT(")");
+    }
+
+    llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+};
+
+class BreakIfExpression : public ConditionalExpression {
+  protected:
+    Variable* var_;
+    Expression* expr_;
+
+  public:
+    BreakIfExpression(Expression* cond, Variable* v, Expression* e) :
+      ConditionalExpression(cond), var_(v), expr_(e) {
+    }
+
+    virtual void Dump(int tabs = 0) const {
+      BISON_TABBED_PRINT(tabs, "(BreakIf ");
+
+      if (cond_) {
+        BISON_PRINT(" ");
+        cond_->Dump();
+      }
 
       if (var_) {
         BISON_PRINT(" ");

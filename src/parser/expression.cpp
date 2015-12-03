@@ -136,7 +136,7 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   return builder.CreateCall(callee, args, return_name);
 }
 
-llvm::Value* IfExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
+llvm::Value* ConditionalExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
   llvm::Type* type = value->getType();
 
   if (type->isIntegerTy(1) == false) {
@@ -178,7 +178,7 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
 
   builder.CreateCondBr(cond_value, true_bb, false_bb);
 
-  // Start generating the if.
+  // Start generating the true side.
   builder.SetInsertPoint(true_bb);
   llvm::Value* true_result = true_cond_->Codegen(fct, builder);
 
@@ -419,6 +419,72 @@ llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
   res = HandlePhiNodes(builder);
 
   return res;
+}
+
+llvm::Value* BreakIfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  llvm::BasicBlock* bb = nullptr;
+
+  if (var_->IsString() == false) {
+    size_t idx = var_->GetIdx();
+    bb = fct->GetLabel(idx);
+  } else {
+    const char* name = var_->GetString();
+    bb = fct->GetLabel(name);
+  }
+
+  assert(bb != nullptr);
+
+  // First generate the expr if there.
+  llvm::Value* result = nullptr;
+  if (expr_ != nullptr) {
+    result = expr_->Codegen(fct, builder);
+  }
+
+  // Second generate the cond if there.
+  llvm::Value* cond = nullptr;
+  if (cond_ != nullptr) {
+    cond = cond_->Codegen(fct, builder);
+    cond = TransformCondition(cond, builder);
+  }
+
+  // Now generate the if:
+  llvm::BasicBlock* true_bb = nullptr;
+  llvm::BasicBlock* false_bb = nullptr;
+
+  // Get the llvm function.
+  llvm::Function* llvm_fct = fct->GetFunction();
+
+  // Add it automatically to the function.
+  true_bb = BasicBlock::Create(llvm::getGlobalContext(), "true", llvm_fct);
+
+  // The false side will wait before being emitted.
+  false_bb = BasicBlock::Create(llvm::getGlobalContext(), "false");
+
+  builder.CreateCondBr(cond, true_bb, false_bb);
+
+  // Generate the break.
+  builder.SetInsertPoint(true_bb);
+
+  if (result != nullptr) {
+    // We should push this to the named expression so that it knows about it.
+    NamedExpression* named = fct->FindNamedExpression(bb);
+
+    // If we did not find it, we will not push the information there, it is not going to a merge point...
+    if (named != nullptr) {
+      named->AddIncomingPhi(result, true_bb);
+    }
+  }
+
+  builder.CreateBr(bb);
+
+  assert(cond != nullptr);
+
+  // Now set ourselves in the false side and continue our route.
+  llvm_fct->getBasicBlockList().push_back(false_bb);
+  builder.SetInsertPoint(false_bb);
+
+  // No return in this case.
+  return nullptr;
 }
 
 llvm::Value* BreakExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {

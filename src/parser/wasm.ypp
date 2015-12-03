@@ -535,13 +535,11 @@ BREAK:
     $$ = new BreakExpression(var, expr);
   } |
   BREAK_IF_TOKEN EXPRESSION VARIABLE EXPRESSION_OR_NOT {
-    // Just generate an If expression with a break.
     Expression* cond = $2;
     Variable* var = $3;
     Expression* expr = $4;
-    BreakExpression* break_expr = new BreakExpression(var, expr);
-    IfExpression* if_expression = new IfExpression(cond, break_expr);
-    $$ = if_expression;
+    BreakIfExpression* break_if_expr = new BreakIfExpression(cond, var, expr);
+    $$ = break_if_expr;
   }
 
 BLOCK:
