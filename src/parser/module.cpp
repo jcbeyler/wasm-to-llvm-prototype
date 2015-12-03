@@ -225,12 +225,75 @@ void WasmModule::GenerateMemoryBaseFunction() {
     // Now set that global variable to the return of the malloc.
     builder.CreateStore(malloc_call, memory_pointer_, false);
 
+    // Finally, add the code to copy in the segments.
+    if (segments_ != nullptr) {
+      // Get memcpy intrinsic.
+      llvm::Intrinsic::ID memcpy_intr = llvm::Intrinsic::memcpy;
+      std::vector<llvm::Type*> mem_args;
+      llvm::PointerType* ptr_type = llvm::PointerType::get(llvm::IntegerType::get(llvm::getGlobalContext(), 8), 0);
+      mem_args.push_back(ptr_type);
+      mem_args.push_back(ptr_type);
+      mem_args.push_back(llvm::Type::getInt32Ty(llvm::getGlobalContext()));
+
+      llvm::Function* intrinsic_fct = llvm::Intrinsic::getDeclaration(GetModule(), memcpy_intr, mem_args);
+
+      llvm::Type* type_64 = llvm::Type::getInt64Ty(llvm::getGlobalContext());
+      llvm::Value* local_base = builder.CreatePtrToInt(malloc_call, type_64, "base");
+
+      for (std::list<Segment*>::const_iterator it = segments_->begin();
+          it != segments_->end();
+          it++) {
+        Segment* segment = *it;
+        
+        // Create the string pointer (this works for now since we don't have hex support).
+        llvm::Value* string = builder.CreateGlobalStringPtr(segment->GetData());
+
+        // Create destination.
+        llvm::Value* offset = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(64, segment->GetStart(), false));
+        llvm::Value* dest = builder.CreateAdd(local_base, offset, "dest");
+        dest = builder.CreateIntToPtr(dest,
+                                      llvm::Type::getInt8PtrTy(llvm::getGlobalContext()),
+                                      "ptrdest");
+
+        // Now we want to copy it in place.
+
+        // Populate arguments.
+        std::vector<llvm::Value*> args;
+        args.push_back(dest);
+        args.push_back(string);
+
+        // Create the length, align, and volatile.
+        llvm::Value* length = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, segment->GetLength(), false));
+        llvm::Value* align = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, 1, false));
+        llvm::Value* is_volatile = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, 0, false));
+        args.push_back(length);
+        args.push_back(align);
+        args.push_back(is_volatile);
+
+        builder.CreateCall(intrinsic_fct, args);
+      }
+    }
+
     builder.CreateRetVoid();
   }
 }
 
 void WasmModule::Dump() {
   BISON_PRINT("Module Dump:\n");
+
+  if (segments_ != nullptr) {
+    if (segments_->size() > 0) {
+      BISON_TABBED_PRINT(1, "Segments:");
+      for (std::list<Segment*>::const_iterator it = segments_->begin();
+          it != segments_->end();
+          it++) {
+        Segment* segment = *it;
+        segment->Dump(1);
+      }
+    } else {
+      BISON_TABBED_PRINT(1, "No Segments");
+    }
+  }
 
   for (auto elem : functions_) {
     WasmFunction* f = elem;

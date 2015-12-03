@@ -279,6 +279,15 @@ class Segment {
     char* GetData() const {
       return data_;
     }
+
+    int GetLength() const {
+      // This will change soon when we handle hex.
+      return strlen(data_);
+    }
+
+    void Dump(int tab = 0) {
+      BISON_TABBED_PRINT(tab, "Segment %d - %s\n", start_, data_);
+    }
 };
 
 #endif
