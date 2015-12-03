@@ -106,7 +106,7 @@ extern int yylex (void);
   WasmFile* wf;
 }
 
-%token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_TOKEN GET_LOCAL SET_LOCAL
+%token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_IF_TOKEN BREAK_TOKEN GET_LOCAL SET_LOCAL
 %token INTEGER STRING FLOAT
 %token IDENTIFIER
 %token MODULE_TOKEN
@@ -533,6 +533,15 @@ BREAK:
     Variable* var = $2;
     Expression* expr = $3;
     $$ = new BreakExpression(var, expr);
+  } |
+  BREAK_IF_TOKEN EXPRESSION VARIABLE EXPRESSION_OR_NOT {
+    // Just generate an If expression with a break.
+    Expression* cond = $2;
+    Variable* var = $3;
+    Expression* expr = $4;
+    BreakExpression* break_expr = new BreakExpression(var, expr);
+    IfExpression* if_expression = new IfExpression(cond, break_expr);
+    $$ = if_expression;
   }
 
 BLOCK:
@@ -863,7 +872,7 @@ ASSERT_TRAP:
 
 ASSERT_INVALID:
   '('
-  ASSERT_INVALID_TOKEN 
+  ASSERT_INVALID_TOKEN
   ')' {
     $$ = nullptr;
   }

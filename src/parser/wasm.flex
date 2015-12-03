@@ -294,6 +294,11 @@ br {
   return BREAK_TOKEN;
 }
 
+br_if {
+  LEX_DEBUG_PRINT("BREAK IF\n");
+  return BREAK_IF_TOKEN;
+}
+
 return {
   LEX_DEBUG_PRINT("RETURN\n");
   return RETURN_TOKEN;

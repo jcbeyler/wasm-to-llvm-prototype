@@ -398,7 +398,7 @@ llvm::Value* BlockExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& buil
 
   // If last node from the block is not nullptr, register it.
   if (res != nullptr) {
-    AddIncomingPhi(res, block_code);
+    AddIncomingPhi(res, builder.GetInsertBlock());
   }
 
   // Pop it.
