@@ -26,6 +26,40 @@
 #define LEX_DEBUG_PRINT(...) \
     DEBUG_PRINT(LEX_GROUP, LEX_VERBOSITY, __VA_ARGS__)
 
+static void FixString(char* str) {
+  char* start = str;
+  // Quick way of changing \nn into one character.
+  int current_write = 0;
+
+  while (*str != '\0') {
+    char c = *str;
+
+    if (c == '\\') {
+      if (str[1] != '\\') {
+        assert(str[1] != '\0' && str[2] != '\0');
+
+        char tmp[5];
+        tmp[0] = '0';
+        tmp[1] = 'x';
+        tmp[2] = str[1];
+        tmp[3] = str[2];
+        tmp[4] = '\0';
+
+        c = strtol(tmp, nullptr, 16);
+
+        str += 2;
+      }
+    } 
+
+    start[current_write] = c;
+
+    current_write++;
+    str++;
+  }
+
+  start[current_write] = '\0';
+}
+
 %}
 
 DIGIT    [0-9]
@@ -520,6 +554,9 @@ case {
   // This is probably not correct since a string could be hex defined and could have
   //   a \x00. We will want to use the length to copy this around.
   yylval.string = strdup(yytext + 1);
+
+  // Before passing it over, let us change it to handle \ cases.
+  FixString(yylval.string);
   return STRING;
 }
 
