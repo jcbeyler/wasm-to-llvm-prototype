@@ -378,10 +378,24 @@ void WasmFunction::MangleFunctionName(WasmModule* module) {
 
   // Check if it is not in the module already,
   //   no need to check the file since we have the module prefix.
+  FILE* f = fopen("/dev/random", "r");
+
   while (module->DoesMangledNameExist(end_name) == true) {
     // Now we add a random letter character until the name is unique.
-    char c = 'a' + rand() % 26;
+    char c = 'a';
+
+    // If we do have access to /dev/random, we can be smarter; otherwise just add 'a'...
+    if (f != nullptr) {
+      int offset = fgetc(f);
+      c += offset % 26;
+    }
+
     end_name += c;
+  }
+
+  // Close the file now.
+  if (f != nullptr) {
+    fclose(f), f = nullptr;
   }
 
   // Now we have a unique method, register it.

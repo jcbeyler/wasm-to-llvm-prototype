@@ -42,7 +42,7 @@ class WasmScriptElem {
     int line_;
 
   public:
-    WasmScriptElem(Expression* expr) : expr_(expr) {
+    WasmScriptElem(Expression* expr) : expr_(expr), name_(""), mangled_name_(""), line_(0) {
       // Asserts really don't have names but we will want one to call these.
       static int cnt = 0;
       std::ostringstream oss;
