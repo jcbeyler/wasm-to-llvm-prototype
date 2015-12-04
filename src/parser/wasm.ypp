@@ -37,6 +37,7 @@
 #include "wasm_script.h"
 #include "wasm_script_elem.h"
 #include "wasm_file.h"
+#include "import_function.h"
 
 extern int yyerror (const std::string& s);
 extern int yylex (void);
@@ -63,6 +64,7 @@ extern int yylex (void);
   class WasmFile;
   class WasmFunction;
   class WasmImport;
+  class WasmImportFunction;
   class WasmModule;
   class WasmScript;
   class WasmScriptElem;
@@ -106,6 +108,7 @@ extern int yylex (void);
   WasmScriptElem* wse;
   WasmFile* wf;
   WasmImport *wi;
+  WasmImportFunction *wif;
 }
 
 %token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_IF_TOKEN BREAK_TOKEN GET_LOCAL SET_LOCAL
@@ -135,7 +138,7 @@ extern int yylex (void);
 %token LABEL
 %token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN
 
-%type<voidptr> FUNCTION_FIELDS CASES LIST_CASES
+%type<voidptr> FUNCTION_FIELDS CASES LIST_CASES IMPORT_PARAMS_RETURN
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE SEGMENTS
 
 %type<b> SIGN
@@ -168,7 +171,7 @@ extern int yylex (void);
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
-%type<wi> IMPORT
+%type<wif> IMPORT_FUNCTION
 %type<wf> FILE
 
 %%
@@ -250,12 +253,41 @@ SEGMENTS:
   }
 
 IMPORT_PARAMS_RETURN:
-  '(' PARAM ')' IMPORT_PARAMS_RETURN |
-  '(' RESULT ')' IMPORT_PARAMS_RETURN |
+  '(' PARAM ')' IMPORT_PARAMS_RETURN {
+    std::list<FunctionField*>* list = static_cast<std::list<FunctionField*>* >($4);
+    Local* field = $2;
+    ParamField* pf = new ParamField(field);
+    list->push_front(pf);
+    $$ = list;
+  } |
+  '(' RESULT ')' IMPORT_PARAMS_RETURN {
+    std::list<FunctionField*>* list = static_cast<std::list<FunctionField*>* >($4);
+    int64_t field = $2;
+    ResultField* rf = new ResultField(field);
+    list->push_front(rf);
+    $$ = list;
+  } | {
+    $$ = new std::list<FunctionField*>();
+  }
 
-IMPORT:
- '(' IMPORT_TOKEN VARIABLE_OR_NOT STRING STRING IMPORT_PARAMS_RETURN ')' {
-   $$ = nullptr;
+IMPORT_FUNCTION:
+ '(' IMPORT_TOKEN IDENTIFIER_OR_NOT STRING STRING IMPORT_PARAMS_RETURN ')' {
+   WasmImportFunction* wif = nullptr;
+
+   // Handle name mangling.
+   const char* id = $3;
+   const char* module_name = $4;
+   const char* func_name = $5;
+
+   std::list<FunctionField*>* fields = static_cast<std::list<FunctionField*>* >($6);
+
+   if (id != nullptr) {
+     wif = new WasmImportFunction(module_name, func_name, fields, id);
+   } else {
+     wif = new WasmImportFunction(module_name, func_name, fields, id);
+   }
+
+   $$ = wif;
  }
 
 MODULE_ELEMS:
@@ -271,10 +303,10 @@ MODULE_ELEMS:
     module->AddExport(e);
     $$ = module;
   } |
-  IMPORT MODULE_ELEMS {
+  IMPORT_FUNCTION MODULE_ELEMS {
     WasmModule* module = $2;
-    WasmImport* import = $1;
-    module->AddImport(import);
+    WasmImportFunction* import = $1;
+    module->AddImportFunction(import);
     $$ = module;
   } |
    '(' MEMORY INTEGER SEGMENTS ')' MODULE_ELEMS {
@@ -380,8 +412,6 @@ FUNCTION: '('
     FUNCTION_FIELDS
     ')' {
       WasmFunction* f = nullptr;
-
-      // Handle name mangling.
       const char* id = $3;
 
       std::list<FunctionField*>* fields = static_cast<std::list<FunctionField*>* >($4);

@@ -38,7 +38,7 @@
 // Forward declaration.
 class WasmFunction;
 class WasmFile;
-class WasmImport;
+class WasmImportFunction;
 
 /**
  * Base module node for Wasm, contains right now exports and functions
@@ -53,7 +53,7 @@ class WasmModule {
     // Created during building.
     std::list<WasmFunction*> functions_;
     std::list<WasmExport*> exports_;
-    std::list<WasmImport*> imports_;
+    std::list<WasmImportFunction*> import_functions_;
 
     // For reference later.
     std::map<std::string, WasmFunction*> map_functions_;
@@ -111,8 +111,8 @@ class WasmModule {
       return memory_allocator_fct_;
     }
 
-    void AddImport(WasmImport* e) {
-      imports_.push_front(e);
+    void AddImportFunction(WasmImportFunction* wif) {
+      import_functions_.push_front(wif);
     }
 
     void AddExport(WasmExport* e) {
