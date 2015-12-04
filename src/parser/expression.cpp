@@ -136,6 +136,10 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
   return builder.CreateCall(callee, args, return_name);
 }
 
+llvm::Value* CallImportExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  return CallExpression::Codegen(fct, builder);
+}
+
 llvm::Value* ConditionalExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
   llvm::Type* type = value->getType();
 

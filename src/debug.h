@@ -17,10 +17,10 @@
 #define H_DEBUG
 
 // Easy way to get debug or not and play with it...
-#define DEBUG 0
-#define LEX_GROUP 0
+#define DEBUG 1
+#define LEX_GROUP 1
 #define LEX_VERBOSITY 0
-#define BISON_GROUP 0
+#define BISON_GROUP 1
 #define BISON_VERBOSITY 0
 #define PASS_DRIVER_GROUP 1
 #define PASS_DRIVER_VERBOSITY 0

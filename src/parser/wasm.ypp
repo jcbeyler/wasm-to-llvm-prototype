@@ -62,6 +62,7 @@ extern int yylex (void);
   class WasmExport;
   class WasmFile;
   class WasmFunction;
+  class WasmImport;
   class WasmModule;
   class WasmScript;
   class WasmScriptElem;
@@ -104,6 +105,7 @@ extern int yylex (void);
   WasmScript* ws;
   WasmScriptElem* wse;
   WasmFile* wf;
+  WasmImport *wi;
 }
 
 %token NOP BLOCK_TOKEN IF IF_ELSE LOOP BREAK_IF_TOKEN BREAK_TOKEN GET_LOCAL SET_LOCAL
@@ -125,13 +127,13 @@ extern int yylex (void);
 %token ASSERT_INVALID_TOKEN
 %token ASSERT_RETURN_NAN_TOKEN
 %token INVOKE_TOKEN
-%token CALL_TOKEN
+%token CALL_TOKEN CALL_IMPORT_TOKEN
 %token LOCAL_TOKEN
 %token CASE TABLE TABLE_SWITCH
 %token UNREACHABLE_TOKEN
 %token CONST
 %token LABEL
-%token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN
+%token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN
 
 %type<voidptr> FUNCTION_FIELDS CASES LIST_CASES
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE SEGMENTS
@@ -143,7 +145,7 @@ extern int yylex (void);
 %type<co> POTENTIAL_SIGNED_CONVERSION
 %type<e> EXPORT
 %type<et> TYPE
-%type<ex> CALL BREAK BLOCK MEMORY_OPERATION SWITCH
+%type<ex> CALL BREAK BLOCK MEMORY_OPERATION SWITCH CALL_IMPORT
 %type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
@@ -166,6 +168,7 @@ extern int yylex (void);
 %type<v> VARIABLE_OR_NOT VARIABLE
 %type<vh> VALUE
 %type<wse> ASSERT ASSERT_TRAP ASSERT_RETURN ASSERT_RETURN_NAN ASSERT_INVALID SCRIPT_ELEM
+%type<wi> IMPORT
 %type<wf> FILE
 
 %%
@@ -246,6 +249,15 @@ SEGMENTS:
     $$ = list;
   }
 
+IMPORT_PARAMS_RETURN:
+  '(' PARAM ')' IMPORT_PARAMS_RETURN |
+  '(' RESULT ')' IMPORT_PARAMS_RETURN |
+
+IMPORT:
+ '(' IMPORT_TOKEN VARIABLE_OR_NOT STRING STRING IMPORT_PARAMS_RETURN ')' {
+   $$ = nullptr;
+ }
+
 MODULE_ELEMS:
   FUNCTION MODULE_ELEMS {
     WasmModule* module = $2;
@@ -257,6 +269,12 @@ MODULE_ELEMS:
     WasmModule* module = $2;
     WasmExport* e = $1;
     module->AddExport(e);
+    $$ = module;
+  } |
+  IMPORT MODULE_ELEMS {
+    WasmModule* module = $2;
+    WasmImport* import = $1;
+    module->AddImport(import);
     $$ = module;
   } |
    '(' MEMORY INTEGER SEGMENTS ')' MODULE_ELEMS {
@@ -511,6 +529,17 @@ CALL:
     $$ = call;
   }
 
+CALL_IMPORT:
+  CALL_IMPORT_TOKEN VARIABLE EXPRESSIONS {
+    Variable* var = $2;
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($3);
+    CallImportExpression* call = new CallImportExpression(var, list);
+
+    call->SetLine(Globals::Get()->GetLineCnt());
+
+    $$ = call;
+  }
+
 VALUE:
   FLOAT {
     $$ = new ValueHolder($1);
@@ -640,6 +669,9 @@ EXPRESSION_INNER:
       $$ = if_expression;
     } |
     CALL {
+      $$ = $1;
+    } |
+    CALL_IMPORT {
       $$ = $1;
     } |
     UNREACHABLE_TOKEN {
