@@ -49,7 +49,7 @@ static void FixString(char* str) {
 
         str += 2;
       }
-    } 
+    }
 
     start[current_write] = c;
 
@@ -303,6 +303,11 @@ block {
   return BLOCK_TOKEN;
 }
 
+import {
+  LEX_DEBUG_PRINT("IMPORT\n");
+  return IMPORT_TOKEN;
+}
+
 if {
   LEX_DEBUG_PRINT("IF\n");
   return IF;
@@ -366,6 +371,11 @@ label {
 set_local {
   LEX_DEBUG_PRINT("SET LOCAL\n");
   return SET_LOCAL;
+}
+
+call_import {
+  LEX_DEBUG_PRINT("CALL IMPORT");
+  return CALL_IMPORT_TOKEN;
 }
 
 call {

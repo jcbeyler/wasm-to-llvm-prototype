@@ -333,7 +333,16 @@ class CallExpression : public Expression {
       return true;
     }
 
-    llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+};
+
+class CallImportExpression : public CallExpression {
+  public:
+    CallImportExpression(Variable* id, std::list<Expression*> *params) :
+      CallExpression(id, params) {
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
 
 class ReturnExpression : public Expression {

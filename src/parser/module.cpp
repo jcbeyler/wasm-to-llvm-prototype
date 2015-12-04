@@ -244,7 +244,7 @@ void WasmModule::GenerateMemoryBaseFunction() {
           it != segments_->end();
           it++) {
         Segment* segment = *it;
-        
+
         // Create the string pointer (this works for now since we don't have hex support).
         llvm::Value* string = builder.CreateGlobalStringPtr(segment->GetData());
 
