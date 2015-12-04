@@ -94,10 +94,10 @@ class Store : public MemoryExpression {
       MemoryExpression(add), value_(value) {
     }
 
-    Store() : MemoryExpression() {
+    Store() : MemoryExpression(), value_(nullptr) {
     }
 
-    Store(size_t size) : MemoryExpression(size) {
+    Store(size_t size) : MemoryExpression(size), value_(nullptr) {
     }
 
     void SetValue(Expression* value) {

@@ -122,6 +122,8 @@ void WasmScript::GenerateGeneralScriptCalls(WasmFile* file) {
 
     // Now we can generate it.
     expr->Codegen(wasm_fct, builder);
+
+    delete expr, expr = nullptr;
   }
 
   Const* one = new Const(INT_32,
@@ -129,4 +131,6 @@ void WasmScript::GenerateGeneralScriptCalls(WasmFile* file) {
   ReturnExpression* return_expr = new ReturnExpression(one);
 
   return_expr->Codegen(wasm_fct, builder);
+
+  delete return_expr, return_expr = nullptr;
 }

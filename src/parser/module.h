@@ -80,7 +80,8 @@ class WasmModule {
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
       module_(module), fpm_(fpm), file_(file),
       memory_(-1), max_memory_(~0), segments_(nullptr),
-      memory_pointer_(nullptr), memory_allocator_fct_(nullptr) {
+      memory_pointer_(nullptr), memory_allocator_fct_(nullptr),
+      line_(0) {
         static int cnt = 0;
         std::ostringstream oss;
         oss << "wasm_module_" << cnt;

@@ -28,7 +28,7 @@ class WasmFile {
     WasmModule* glue_module_;
 
   public:
-    WasmFile() : script_module_(nullptr) {
+    WasmFile() : script_module_(nullptr), glue_module_(nullptr) {
     }
 
     void AddModule(WasmModule* module) {

@@ -122,7 +122,6 @@ llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuil
       } else {
         return builder.CreateSDiv(lv, rv, "cmptmp");
       }
-      return builder.CreateUDiv(lv, rv, "divtmp");
     case ADD_OPER:
       return builder.CreateAdd(lv, rv, "addtmp");
     case SUB_OPER:

@@ -42,6 +42,7 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         // Use the intrinsic value if we have the same type.
         //   Basically this is used for f32.trunc or f64.trunc...
         ConversionOperation* conversion = dynamic_cast<ConversionOperation*>(operation_);
+        assert(conversion != nullptr);
         is_intrinsic = (conversion->GetSrc() == conversion->GetDest());
         break;
     }
@@ -133,11 +134,10 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
         assert(conversion != nullptr);
         return HandleTypeCasts(rv, ConvertType(conversion->GetSrc()), ConvertType(type), operation_->GetSignedOrOrdered(), builder);
       }
-
-      default:
-        assert(0);
-        return nullptr;
     }
+
+    assert(0);
+    return nullptr;
   }
 }
 

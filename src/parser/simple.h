@@ -30,22 +30,34 @@ class Variable {
 
     bool is_string_;
 
+    Variable(Variable const &) {
+    }
+
+    Variable& operator=(Variable const&) {
+    }
+
   public:
     Variable(int64_t t) {
       idx_ = t;
-      s_ = new char[32];
-      sprintf(s_, "%ld", t);
       is_string_ = false;
+
+      char tab[32];
+      sprintf(tab, "%ld", t);
+      s_ = strdup(tab);
     }
 
-    Variable(char* v) {
-      s_ = v;
-      is_string_ = true;
-    }
-
-    Variable(const char* v) {
+    Variable(char* v) : idx_(0) {
       s_ = strdup(v);
       is_string_ = true;
+    }
+
+    Variable(const char* v) : idx_(0) {
+      s_ = strdup(v);
+      is_string_ = true;
+    }
+
+    ~Variable() {
+      free(s_), s_ = nullptr;
     }
 
     bool IsString() const {

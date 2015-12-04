@@ -69,7 +69,7 @@ class Local {
     void Dump(const std::string& prefix, int tabs = 0) {
       BISON_TABBED_PRINT(tabs, "(%s: ", prefix.c_str());
       size_t max = elems_.size();
-      size_t i;
+      size_t i = 0; 
 
       for(std::deque<LocalElem*>::const_iterator iter = elems_.begin();
                                                 iter != elems_.end();
