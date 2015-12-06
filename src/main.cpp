@@ -25,21 +25,26 @@
 
 int yyparse();
 
+void PrintUsage(char* exec_name) {
+  std::cerr << "Usage: " << exec_name << " <filename>" << std::endl;
+  std::cerr << "\tOption is: -n/--no-opt, no verification and no optimizations\n" << std::endl;
+}
+
 int main(int argc, char** argv) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << "<filename> " << std::endl;
-    std::cerr << "\tOption is: -n/--no-opt, no verification and no optimizations\n" << std::endl;
+    PrintUsage(argv[0]);
     return EXIT_FAILURE;
   }
 
   struct option long_options[] = {
     {"no-opt", 0, 0, 'n'},
+    {"help", 0, 0, 'h'},
     {nullptr, 0, 0, 0}
   };
 
   while (1) {
     int idx = 0;
-    int c = getopt_long(argc, argv, "n", long_options, &idx);
+    int c = getopt_long(argc, argv, "nh", long_options, &idx);
 
     if (c == -1) {
       break;
@@ -50,6 +55,12 @@ int main(int argc, char** argv) {
         std::cerr << "Disabling Verifications and Optimizations" << std::endl;
         Globals::Get()->DisableVerificationOptimization();
         break;
+      case 'h':
+        PrintUsage(argv[0]);
+        return EXIT_SUCCESS;
+      default:
+        PrintUsage(argv[0]);
+        return EXIT_FAILURE;
     }
   }
 
@@ -59,7 +70,12 @@ int main(int argc, char** argv) {
   BISON_PRINT("Parsing %s\n", argv[1]);
 
   FILE* f = freopen(argv[argc - 1], "r", stdin);
-  assert(f != nullptr);
+  
+  if (f == nullptr) {
+    std::cerr << "File " << argv[argc - 1] << " not opening" << std::endl;
+    PrintUsage(argv[0]);
+    return EXIT_FAILURE;
+  }
 
   if (yyparse() == 0) {
     BISON_PRINT("Done Parsing %s\n", argv[1]);
