@@ -61,32 +61,7 @@ class Binop : public Expression {
       left_ = l;
     }
 
-    virtual void Dump(int tabs = 0) const {
-      BISON_TABBED_PRINT(tabs, "(");
-
-      if (operation_) {
-        operation_->Dump();
-      } else {
-        BISON_PRINT("Operation is nullptr");
-      }
-
-      BISON_PRINT(" ");
-
-      if (left_) {
-        left_->Dump();
-      } else {
-        BISON_PRINT("nullptr");
-      }
-
-      BISON_PRINT(" ");
-
-      if (right_) {
-        right_->Dump();
-      } else {
-        BISON_PRINT("nullptr");
-      }
-      BISON_PRINT(")");
-    }
+    virtual void Dump(int tabs = 0) const;
 };
 
 #endif

@@ -141,3 +141,35 @@ llvm::Value* Unop::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   }
 }
 
+void Unop::Dump(int tabs) const {
+  BISON_TABBED_PRINT(tabs, "(");
+
+  if (operation_) {
+    operation_->Dump();
+  } else {
+    BISON_PRINT("Operation is nullptr");
+  }
+
+  BISON_PRINT(" ");
+
+  if (only_) {
+    only_->Dump();
+  } else {
+    BISON_PRINT("nullptr");
+  }
+  BISON_PRINT(")");
+}
+
+bool Unop::Walk(bool (*fct)(Expression*, void*), void* data) {
+  assert(fct != nullptr);
+
+  if (fct(this, data) == false) {
+    return false;
+  }
+
+  if (only_ != nullptr) {
+    return only_->Walk(fct, data);
+  }
+
+  return true;
+}
