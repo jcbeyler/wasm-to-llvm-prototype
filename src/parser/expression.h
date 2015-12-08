@@ -50,38 +50,9 @@ class Unop : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 
-    virtual void Dump(int tabs = 0) const {
-      BISON_TABBED_PRINT(tabs, "(");
+    virtual void Dump(int tabs = 0) const;
 
-      if (operation_) {
-        operation_->Dump();
-      } else {
-        BISON_PRINT("Operation is nullptr");
-      }
-
-      BISON_PRINT(" ");
-
-      if (only_) {
-        only_->Dump();
-      } else {
-        BISON_PRINT("nullptr");
-      }
-      BISON_PRINT(")");
-    }
-
-    virtual bool Walk(bool (*fct)(Expression*, void*), void* data) {
-      assert(fct != nullptr);
-
-      if (fct(this, data) == false) {
-        return false;
-      }
-
-      if (only_ != nullptr) {
-        return only_->Walk(fct, data);
-      }
-
-      return true;
-    }
+    virtual bool Walk(bool (*fct)(Expression*, void*), void* data);
 };
 
 
