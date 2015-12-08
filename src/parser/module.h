@@ -40,6 +40,8 @@ class WasmFunction;
 class WasmFile;
 class WasmImportFunction;
 
+#include "import_function.h"
+
 /**
  * Base module node for Wasm, contains right now exports and functions
  */
@@ -62,6 +64,10 @@ class WasmModule {
     // Hash associations.
     std::map<std::string, std::string> map_hash_association_;
     std::map<std::string, std::string> map_reversed_hash_association_;
+
+    // For reference later for import functions: no hash yet for them.
+    std::map<std::string, WasmImportFunction*> map_import_functions_;
+    std::vector<WasmImportFunction*> vector_import_functions_;
 
     std::string name_;
     std::string hash_name_;
@@ -182,6 +188,10 @@ class WasmModule {
     WasmFunction* GetWasmFunction(const char* name, bool check_file = true, unsigned int line = ~0) const;
     WasmFunction* GetWasmFunction(const std::string& name, bool check_file = true, unsigned int line = ~0) const;
     WasmFunction* GetWasmFunction(size_t idx) const;
+
+    WasmImportFunction* GetWasmImportFunction(const char* name, bool check_file = true, unsigned int line = ~0) const;
+    WasmImportFunction* GetWasmImportFunction(const std::string& name, bool check_file = true, unsigned int line = ~0) const;
+    WasmImportFunction* GetWasmImportFunction(size_t idx) const;
 
     llvm::Function* GetOrCreateIntrinsic(llvm::Intrinsic::ID name, ETYPE type = VOID);
     llvm::Function* GetWasmAssertTrapFunction();

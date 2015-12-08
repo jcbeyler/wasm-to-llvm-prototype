@@ -140,6 +140,8 @@ void WasmModule::Generate() {
   // Clear the old map and the vector functions.
   map_functions_.clear();
   vector_functions_.clear();
+  map_import_functions_.clear();
+  vector_import_functions_.clear();
 
   // Now we only have the exported methods.
   map_functions_ = exported_functions;
@@ -152,6 +154,11 @@ void WasmModule::Initialize() {
   for (auto it : functions_) {
     map_functions_[it->GetName()] = it;
     vector_functions_.push_back(it);
+  }
+
+  for (auto it : import_functions_) {
+    map_import_functions_[it->GetName()] = it;
+    vector_import_functions_.push_back(it);
   }
 
   // Create a new pass manager attached to it.
@@ -404,3 +411,27 @@ void WasmModule::MangleNames(WasmFile* file) {
   }
 }
 
+WasmImportFunction* WasmModule::GetWasmImportFunction(const char* name, bool check_file, unsigned int line) const {
+  // First look in our module.
+  std::map<std::string, WasmImportFunction*>::const_iterator it = map_import_functions_.find(name);
+  WasmImportFunction* fct = nullptr;
+
+  if (it != map_import_functions_.end()) {
+    fct = it->second;
+  }
+
+  return fct;
+}
+
+WasmImportFunction* WasmModule::GetWasmImportFunction(const std::string& name, bool check_file, unsigned int line) const {
+  WasmImportFunction* fct = GetWasmImportFunction(name.c_str(), check_file, line);
+  return fct;
+}
+
+WasmImportFunction* WasmModule::GetWasmImportFunction(size_t idx) const {
+  if (idx < vector_import_functions_.size()) {
+    return vector_import_functions_[idx];
+  }
+
+  return nullptr;
+}

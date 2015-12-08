@@ -137,7 +137,37 @@ llvm::Value* CallExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& build
 }
 
 llvm::Value* CallImportExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
-  return CallExpression::Codegen(fct, builder);
+  WasmModule* module = fct->GetModule();
+  WasmImportFunction* wif = nullptr;
+
+  if (call_id_->IsString()) {
+    const char* name = call_id_->GetString();
+
+    // Line number is needed here in case we are going outside of the module.
+    wif = module->GetWasmImportFunction(name, true, line_);
+  } else {
+    size_t idx = call_id_->GetIdx();
+    wif  = module->GetWasmImportFunction(idx);
+  }
+
+  assert(wif != nullptr);
+
+  llvm::Function* callee = wif->GetFunction();
+  assert(callee != nullptr);
+
+  std::vector<Value*> args;
+  if (params_ != nullptr) {
+    for (auto elem : *params_) {
+      args.push_back(elem->Codegen(fct, builder));
+    }
+  }
+
+  const char* return_name = "";
+  if (wif->GetResult() != VOID) {
+    return_name = "calltmp";
+  }
+
+  return builder.CreateCall(callee, args, return_name);
 }
 
 llvm::Value* ConditionalExpression::TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
