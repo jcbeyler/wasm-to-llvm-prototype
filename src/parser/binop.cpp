@@ -80,7 +80,7 @@ ETYPE Binop::HandleType(llvm::Type* lt, llvm::Type* rt) {
   }
 
   // Return lt's type.
-  return ConvertTypeID2ETYPE(chosen);
+  return ConvertType2ETYPE(chosen);
 }
 
 llvm::Value* Binop::HandleInteger(llvm::Value* lv, llvm::Value* rv, llvm::IRBuilder<>& builder) {

@@ -40,6 +40,7 @@ class WasmFunction;
 class WasmFile;
 class WasmImportFunction;
 
+#include "function.h"
 #include "import_function.h"
 
 /**

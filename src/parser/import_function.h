@@ -29,8 +29,9 @@
 #include "debug.h"
 #include "function_field.h"
 
-// Forward declaration.
+// Forward declarations.
 class FunctionField;
+class WasmModule;
 
 /**
  * Definition of an imported function node in the Wasm format
@@ -39,17 +40,20 @@ class WasmImportFunction {
   protected:
     std::string internal_name_;
 
-    std::string module_;
+    std::string module_name_;
     std::string function_name_;
     std::list<FunctionField*>* fields_;
 
     ETYPE result_;
     llvm::Function* function_;
 
+    // Populate the params vector and fill the result field.
+    void Populate(std::vector<llvm::Type*>& params);
+
   public:
     WasmImportFunction(const std::string& module, const std::string& function_name,
                        std::list<FunctionField*>* f, const std::string& s = "anonymous") :
-                       internal_name_(s), module_(module), function_name_(function_name), fields_(f),
+                       internal_name_(s), module_name_(module), function_name_(function_name), fields_(f),
                        result_(VOID) {
       // If anonymous, let's add a unique suffix.
       if (internal_name_ == "imported_anonymous") {
@@ -75,7 +79,7 @@ class WasmImportFunction {
       }
     }
 
-    llvm::Function* GetFunction();
+    llvm::Function* GetFunction(WasmModule* module);
 
     ETYPE GetResult() const {
       return result_;

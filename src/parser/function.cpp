@@ -27,8 +27,8 @@ llvm::Type* WasmFunction::GetReturnType() const {
 void WasmFunction::FindParams(std::vector<llvm::Type*>& llvm_params) const {
   // Go through all the parameter fields.
   for (std::vector<ParamField*>::const_iterator it = params_.begin();
-                                              it != params_.end();
-                                              it++) {
+                                                it != params_.end();
+                                                it++) {
     ParamField* pf = *it;
     Local* local = pf->GetLocal();
 
