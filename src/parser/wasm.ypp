@@ -590,7 +590,7 @@ VARIABLE_OR_NOT:
 
 GROW_MEMORY:
   GROW_MEMORY_TOKEN EXPRESSION {
-    $$ = new Const(INT_32, new ValueHolder(0));
+    $$ = new MemoryGrow($2);
   }
 
 BREAK:

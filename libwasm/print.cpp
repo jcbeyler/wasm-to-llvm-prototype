@@ -17,7 +17,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <typeinfo>
 
 extern "C" {
   static void handle_float(float val) {

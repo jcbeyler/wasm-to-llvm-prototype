@@ -257,12 +257,16 @@ void WasmModule::GenerateMemoryBaseFunction() {
     builder.Insert(malloc_result, "calltmp");
 
     // Now set the global variables with the malloc'd address and the size.
-    builder.CreateStore(malloc_result, memory_pointer_, false);
-    builder.CreateStore(alloc_size, memory_size_, false);
+    UpdateMemoryInformation(malloc_result, alloc_size, builder);
 
     HandleSegments(builder, malloc_result);
     builder.CreateRetVoid();
   }
+}
+
+void WasmModule::UpdateMemoryInformation(llvm::Value* base, llvm::Value* size, llvm::IRBuilder<>& builder) const {
+  builder.CreateStore(base, memory_pointer_, false);
+  builder.CreateStore(size, memory_size_, false);
 }
 
 void WasmModule::HandleSegments(llvm::IRBuilder<>& builder, llvm::Instruction* malloc_result) {
@@ -466,4 +470,26 @@ WasmImportFunction* WasmModule::GetWasmImportFunction(size_t idx) const {
   }
 
   return nullptr;
+}
+
+llvm::Function* WasmModule::GetReallocFunction() {
+  if (realloc_fct_ == nullptr) {
+    // Size type, let's put 64-bit here.
+    llvm::Type* size_type = llvm::Type::getInt32Ty(getGlobalContext());
+
+    // Create a char* pointer.
+    llvm::PointerType* ptr_type = llvm::PointerType::get(llvm::IntegerType::get(llvm::getGlobalContext(), 8), 0);
+    // Create the realloc function type.
+
+    // Create the parameters.
+    std::vector<llvm::Type*> params;
+    params.push_back(ptr_type);
+    params.push_back(size_type);
+
+    // Create the function type: char* realloc(char*, size_t).
+    llvm::FunctionType* ft = FunctionType::get(ptr_type, params, false);
+    realloc_fct_ = llvm::Function::Create(ft, Function::ExternalLinkage, "realloc", GetModule());
+  }
+
+  return realloc_fct_;
 }

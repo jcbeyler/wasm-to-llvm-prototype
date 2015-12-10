@@ -81,6 +81,7 @@ class WasmModule {
     llvm::GlobalVariable* memory_pointer_;
     llvm::GlobalVariable* memory_size_;
     llvm::Function* memory_allocator_fct_;
+    llvm::Function* realloc_fct_;
 
     int line_;
 
@@ -95,7 +96,7 @@ class WasmModule {
       module_(module), fpm_(fpm), file_(file),
       memory_(-1), max_memory_(~0), segments_(nullptr),
       memory_pointer_(nullptr), memory_size_(nullptr),
-      memory_allocator_fct_(nullptr),
+      memory_allocator_fct_(nullptr), realloc_fct_(nullptr),
       line_(0) {
         static int cnt = 0;
         std::ostringstream oss;
@@ -188,6 +189,7 @@ class WasmModule {
       return functions_;
     }
 
+    llvm::Function* GetReallocFunction();
     std::string GetMemoryBaseFunctionName() const;
     std::string GetMemoryBaseName() const;
     std::string GetMemorySizeName() const;
@@ -212,6 +214,8 @@ class WasmModule {
     bool DoesMangledNameExist(const std::string& name) {
       return map_reversed_hash_association_.find(name) != map_reversed_hash_association_.end();
     }
+
+    void UpdateMemoryInformation(llvm::Value* base, llvm::Value* size, llvm::IRBuilder<>& builder) const;
 };
 
 #endif

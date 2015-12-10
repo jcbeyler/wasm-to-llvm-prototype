@@ -29,6 +29,7 @@ memory_redundancy.wast
 memory_trap.wast
 names.wast
 nan-propagation.wast
+resizing.wast
 switch.wast
 store_retval.wast
 traps.wast

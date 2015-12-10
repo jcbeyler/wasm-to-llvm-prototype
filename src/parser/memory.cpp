@@ -200,3 +200,29 @@ llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   builder.CreateStore(value, address, "store");
   return original_value;
 }
+
+llvm::Value* MemoryGrow::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  // NOTE: This will not play nice with threading...
+
+  std::vector<llvm::Value*> args;
+
+  // Get the module.
+  WasmModule* wasm_module = fct->GetModule();
+
+  llvm::Function* realloc_fct = wasm_module->GetReallocFunction();
+
+  llvm::GlobalVariable* base = wasm_module->GetBaseMemory();
+  llvm::Value* local_base = builder.CreateLoad(base, "local_base");
+  args.push_back(local_base);
+
+  // Generate the new size code.
+  llvm::Value* new_size = expr_->Codegen(fct, builder);
+  llvm::Type* size_type = llvm::Type::getInt32Ty(getGlobalContext());
+  new_size = HandleSimpleTypeCasts(new_size, size_type, false, builder);
+  args.push_back(new_size);
+
+  llvm::Value* result = builder.CreateCall(realloc_fct, args, "grow");
+
+  // Finally, store back the new elements.
+  wasm_module->UpdateMemoryInformation(result, new_size, builder);
+}

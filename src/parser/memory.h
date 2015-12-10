@@ -240,5 +240,16 @@ class MemorySize : public Expression {
     }
 };
 
+class MemoryGrow : public Expression {
+  protected:
+    Expression* expr_;
+
+  public:
+    MemoryGrow(Expression* expr) : expr_(expr) {
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+};
+
 
 #endif
