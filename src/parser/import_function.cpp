@@ -35,7 +35,7 @@ llvm::Function* WasmImportFunction::GetFunction(WasmModule* module) {
       full_name += GetTypeName(elem);
     }
 
-    BISON_PRINT("Import Function not created yet: Internal name: %s Module: %s Function: %s -> Full %s\n", internal_name_.c_str(), module_name_.c_str(), function_name_.c_str(), full_name.c_str()); 
+    BISON_PRINT("Import Function not created yet: Internal name: %s Module: %s Function: %s -> Full %s\n", internal_name_.c_str(), module_name_.c_str(), function_name_.c_str(), full_name.c_str());
 
     // Now get the result type.
     llvm::Type* result_type = ConvertType(result_);

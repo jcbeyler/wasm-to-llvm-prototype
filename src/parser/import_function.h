@@ -66,7 +66,7 @@ class WasmImportFunction {
     }
 
     void Dump(int tab = 0) {
-      BISON_TABBED_PRINT(tab, "Import Function: Internal name: %s Module: %s Function: %s\n", internal_name_.c_str(), module_.c_str(), function_name_.c_str()); 
+      BISON_TABBED_PRINT(tab, "Import Function: Internal name: %s Module: %s Function: %s\n", internal_name_.c_str(), module_name_.c_str(), function_name_.c_str());
 
       if (fields_ != nullptr) {
         BISON_TABBED_PRINT(tab + 1, "Function fields:");
