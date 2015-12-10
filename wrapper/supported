@@ -17,6 +17,7 @@ float_memory.wast
 float_misc.wast
 forward.wast
 functions.wast
+has_feature.wast
 i32.wast
 i64.wast
 imports.wast

@@ -71,6 +71,18 @@ llvm::Value* Const::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     }
     case FLOAT_64:
       return llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(value_->GetDouble()));
+    case INT_1: {
+      int val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, val, false));
+    }
+    case INT_8: {
+      int64_t val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(8, val, false));
+    }
+    case INT_16: {
+      int val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(16, val, false));
+    }
     case INT_32: {
       int val = value_->GetInteger();
       return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, val, false));

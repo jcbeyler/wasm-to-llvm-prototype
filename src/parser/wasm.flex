@@ -527,6 +527,11 @@ select {
   return SELECT_OPER;
 }
 
+has_feature {
+  LEX_DEBUG_PRINT("HAS FEATURE\n");
+  return HAS_FEATURE_OPER;
+}
+
 [-+]{0,1}0x{HEX_DIGIT}+ {
   LEX_DEBUG_PRINT("Integer %s\n", yytext);
   yylval.l = strtoull(yytext, nullptr, 16);

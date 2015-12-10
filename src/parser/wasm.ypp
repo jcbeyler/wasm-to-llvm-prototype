@@ -41,6 +41,7 @@
 
 extern int yyerror (const std::string& s);
 extern int yylex (void);
+extern Expression* HandleHasFeature(char* s);
 
 %}
 
@@ -136,7 +137,7 @@ extern int yylex (void);
 %token LOCAL_TOKEN
 %token CASE TABLE TABLE_SWITCH
 %token UNREACHABLE_TOKEN
-%token CONST
+%token CONST HAS_FEATURE_OPER
 %token LABEL SELECT_OPER
 %token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN OFFSET_TOKEN
 %token GROW_MEMORY_TOKEN MEMORY_SIZE
@@ -777,6 +778,9 @@ EXPRESSION_INNER:
       Expression* result = $2;
       ReturnExpression* return_expr = new ReturnExpression(result);
       $$ = return_expr;
+    } |
+    HAS_FEATURE_OPER STRING {
+      $$ = HandleHasFeature($2);
     }
 
 LOOP_NAMING:
