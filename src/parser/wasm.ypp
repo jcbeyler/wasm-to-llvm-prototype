@@ -757,7 +757,7 @@ EXPRESSION_INNER:
     } |
     MEMORY_OPERATION { $$ = $1; } |
     MEMORY_SIZE {
-      $$ = new Const(INT_32, new ValueHolder(0));
+      $$ = new MemorySize();
     } |
     GROW_MEMORY {
       $$ = $1;
