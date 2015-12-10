@@ -80,17 +80,31 @@ for name in $list; do
       exit 1
     fi
 
-    # Now check if there is an output.
-    test_log=$f_dir/expected-output/$f_base.log
+    # First check if we have a log in our separate folder.
+    our_test_log=wrapper/expected-output/$f_base.log
+    
+    if [ -e $our_test_log ]; then
+      echo "Using our log file $our_test_log"
+      # Now check if there is an output.
+      diff $our_test_log $our_log > $diff_file
 
-    if [ -e $test_log ]; then
-        diff $test_log $our_log > $diff_file
+      if [ $? -ne 0 ]; then
+        echo "Expected output is not the same for test $f:"
+        cat $diff_file
+        exit 1
+      fi
+    else
+      test_log=$f_dir/expected-output/$f_base.log
 
-        if [ $? -ne 0 ]; then
-          echo "Expected output is not the same for test $f:"
-          cat $diff_file
-          exit 1
-        fi
+      if [ -e $test_log ]; then
+          diff $test_log $our_log > $diff_file
+
+          if [ $? -ne 0 ]; then
+            echo "Expected output is not the same for test $f:"
+            cat $diff_file
+            exit 1
+          fi
+      fi
     fi
   fi
 done
