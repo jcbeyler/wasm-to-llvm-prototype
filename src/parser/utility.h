@@ -36,4 +36,5 @@ llvm::Value* HandleTypeCasts(llvm::Value* value, llvm::Type* src_type, llvm::Typ
 
 llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, int result_bw, int dest_bw, bool sign, llvm::IRBuilder<>& builder);
 
+llvm::Value* TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder);
 #endif

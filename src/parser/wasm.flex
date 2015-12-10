@@ -522,6 +522,11 @@ case {
   return CASE;
 }
 
+select {
+  LEX_DEBUG_PRINT("SELECT\n");
+  return SELECT_OPER;
+}
+
 [-+]{0,1}0x{HEX_DIGIT}+ {
   LEX_DEBUG_PRINT("Integer %s\n", yytext);
   yylval.l = strtoull(yytext, nullptr, 16);

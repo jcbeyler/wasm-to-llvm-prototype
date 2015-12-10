@@ -632,4 +632,20 @@ class Unreachable : public Expression {
 
     virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
 };
+
+class SelectExpression : public Expression {
+  protected:
+    ETYPE type_;
+    Expression* cond_;
+    Expression* first_;
+    Expression* second_;
+
+  public:
+    SelectExpression(ETYPE type, Expression* cond, Expression* first, Expression* second) : 
+      cond_(cond), first_(first), second_(second) {
+    }
+
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder);
+};
+
 #endif

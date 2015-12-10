@@ -137,7 +137,7 @@ extern int yylex (void);
 %token CASE TABLE TABLE_SWITCH
 %token UNREACHABLE_TOKEN
 %token CONST
-%token LABEL
+%token LABEL SELECT_OPER
 %token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN OFFSET_TOKEN
 %token GROW_MEMORY_TOKEN MEMORY_SIZE
 
@@ -152,7 +152,7 @@ extern int yylex (void);
 %type<e> EXPORT
 %type<et> TYPE
 %type<ex> CALL BREAK BLOCK MEMORY_OPERATION SWITCH CALL_IMPORT
-%type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT GROW_MEMORY
+%type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT GROW_MEMORY SELECT
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
 %type<l> RESULT INTEGER
@@ -532,6 +532,12 @@ UNOP:
       $$ = op;
     }
 
+SELECT:
+  TYPE '.' SELECT_OPER EXPRESSION EXPRESSION EXPRESSION {
+    SelectExpression* select = new SelectExpression($1, $4, $5, $6);
+    $$ = select;
+  }
+
 EXPRESSIONS:
   EXPRESSION EXPRESSIONS {
     std::list<Expression*>* list = static_cast<std::list<Expression*>* >($2);
@@ -734,6 +740,9 @@ EXPRESSION_INNER:
       $$ = $1;
     } |
     CALL_IMPORT {
+      $$ = $1;
+    } |
+    SELECT {
       $$ = $1;
     } |
     UNREACHABLE_TOKEN {
