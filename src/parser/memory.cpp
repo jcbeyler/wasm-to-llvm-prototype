@@ -107,7 +107,15 @@ llvm::Value* MemoryExpression::GetPointer(WasmFunction*fct, llvm::IRBuilder<>& b
     address_i = HandleIntegerTypeCast(address_i, type_64, bw, 64, false, builder);
   }
 
-  address_i = builder.CreateAdd(address_i, local_base, "add_with_offset");
+  address_i = builder.CreateAdd(address_i, local_base, "start_add");
+
+  // If we have an offset, add it here.
+  if (offset_ != 0) {
+    int64_t offset64 = offset_;
+    llvm::Value* offset = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(64, offset64, false));
+
+    address_i = builder.CreateAdd(address_i, offset, "with_offset");
+  }
 
   return builder.CreateIntToPtr(address_i, ptr_type, "ptr");
 }
