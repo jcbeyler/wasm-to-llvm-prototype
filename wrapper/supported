@@ -18,6 +18,7 @@ forward.wast
 functions.wast
 i32.wast
 i64.wast
+imports.wast
 int_exprs.wast
 int_literals.wast
 labels.wast
@@ -27,5 +28,6 @@ memory_redundancy.wast
 names.wast
 nan-propagation.wast
 switch.wast
+store_retval.wast
 traps.wast
 unreachable.wast

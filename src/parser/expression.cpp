@@ -152,7 +152,7 @@ llvm::Value* CallImportExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>&
 
   assert(wif != nullptr);
 
-  llvm::Function* callee = wif->GetFunction();
+  llvm::Function* callee = wif->GetFunction(module);
   assert(callee != nullptr);
 
   std::vector<Value*> args;

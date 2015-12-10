@@ -26,6 +26,8 @@ echo "Test list is:"
 echo $list
 
 exe=llvm_wasm
+our_log=obj/test_output
+diff_file=obj/test_output_diff
 
 if [ ! -e $exe ]; then
   echo "Build llvm_wasm first"
@@ -34,7 +36,9 @@ fi
 
 for name in $list; do
   f="testsuite/$name"
-  echo $f
+  f_dir=`dirname $f`
+  f_base=`basename $f`
+  echo "Testing $f_base in $f_dir"
 
   if [ ! -e $f ]; then
     echo "Skipping $f, does not exist"
@@ -61,7 +65,7 @@ for name in $list; do
     done
 
     # Create the test exec.
-    g++ obj/wasm_module*s wrapper/main.cpp src/print_line.cpp -o obj/testit -std=gnu++0x -Isrc
+    g++ obj/wasm_module*s wrapper/main.cpp src/print_line.cpp libwasm/* -o obj/testit -std=gnu++0x -Isrc
 
     if [ $? -ne 0 ]; then
       echo "Build of test $f failed. Bailing."
@@ -69,11 +73,24 @@ for name in $list; do
     fi
 
     # Run the test.
-    obj/testit $f
+    obj/testit $f > $our_log
 
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ]; then 
       echo "Test failed: $f. Bailing."
       exit 1
+    fi
+
+    # Now check if there is an output.
+    test_log=$f_dir/expected-output/$f_base.log
+
+    if [ -e $test_log ]; then
+        diff $test_log $our_log > $diff_file
+
+        if [ $? -ne 0 ]; then
+          echo "Expected output is not the same for test $f:"
+          cat $diff_file
+          exit 1
+        fi
     fi
   fi
 done

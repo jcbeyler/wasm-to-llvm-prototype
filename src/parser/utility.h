@@ -25,7 +25,8 @@ const char* GetETypeName(ETYPE type);
 const char* DumpOperation(OPERATION op);
 
 // Conversion of enumeration type to LLVM type.
-ETYPE ConvertTypeID2ETYPE(llvm::Type* type);
+const char* GetTypeName(llvm::Type* type);
+ETYPE ConvertType2ETYPE(llvm::Type* type);
 llvm::Type* ConvertType(ETYPE type);
 size_t GetTypeSize(ETYPE type);
 

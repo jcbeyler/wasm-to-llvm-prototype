@@ -338,7 +338,7 @@ llvm::Value* HandleIntegerTypeCast(llvm::Value* value, llvm::Type* dest_type, in
   return nullptr;
 }
 
-ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
+ETYPE ConvertType2ETYPE(llvm::Type* type) {
   llvm::Type::TypeID type_id = type->getTypeID();
 
   switch(type_id) {
@@ -375,3 +375,6 @@ ETYPE ConvertTypeID2ETYPE(llvm::Type* type) {
   return VOID;
 }
 
+const char* GetTypeName(llvm::Type* type) {
+  return GetETypeName(ConvertType2ETYPE(type));
+}
