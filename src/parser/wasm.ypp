@@ -139,6 +139,7 @@ extern int yylex (void);
 %token CONST
 %token LABEL
 %token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN OFFSET_TOKEN
+%token GROW_MEMORY_TOKEN MEMORY_SIZE
 
 %type<voidptr> FUNCTION_FIELDS CASES LIST_CASES IMPORT_PARAMS_RETURN
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE SEGMENTS
@@ -151,7 +152,7 @@ extern int yylex (void);
 %type<e> EXPORT
 %type<et> TYPE
 %type<ex> CALL BREAK BLOCK MEMORY_OPERATION SWITCH CALL_IMPORT
-%type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT
+%type<ex> EXPRESSION EXPRESSION_INNER EXPRESSION_OR_NOT GROW_MEMORY
 %type<f> FUNCTION
 %type<ff> SIMPLE_FIELD FUNCTION_FIELD
 %type<l> RESULT INTEGER
@@ -587,6 +588,11 @@ VARIABLE_OR_NOT:
   VARIABLE { $$ = $1; }
   | { $$ = nullptr; }
 
+GROW_MEMORY:
+  GROW_MEMORY_TOKEN EXPRESSION {
+    $$ = new Const(INT_32, new ValueHolder(0));
+  }
+
 BREAK:
   BREAK_TOKEN {
     $$ = new BreakExpression();
@@ -750,6 +756,12 @@ EXPRESSION_INNER:
       $$ = loop;
     } |
     MEMORY_OPERATION { $$ = $1; } |
+    MEMORY_SIZE {
+      $$ = new Const(INT_32, new ValueHolder(0));
+    } |
+    GROW_MEMORY {
+      $$ = $1;
+    } |
     BREAK { $$ = $1; } |
     BLOCK { $$ = $1; } |
     RETURN_TOKEN EXPRESSION {

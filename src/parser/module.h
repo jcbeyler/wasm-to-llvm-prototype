@@ -79,17 +79,23 @@ class WasmModule {
     std::list<Segment*>* segments_;
 
     llvm::GlobalVariable* memory_pointer_;
+    llvm::GlobalVariable* memory_size_;
     llvm::Function* memory_allocator_fct_;
 
     int line_;
 
     WasmFunction* InternalGetWasmFunction(const char* name, bool check_file, unsigned int line) const;
+    void GenerateMemoryGlobals();
+    void GenerateMemoryBaseFunction();
+    void HandleSegments(llvm::IRBuilder<>& builder, llvm::Instruction* malloc_result);
+    void GenerateMemoryBasedCode();
 
   public:
     WasmModule(llvm::Module* module = nullptr, llvm::legacy::PassManager* fpm = nullptr, WasmFile* file = nullptr) :
       module_(module), fpm_(fpm), file_(file),
       memory_(-1), max_memory_(~0), segments_(nullptr),
-      memory_pointer_(nullptr), memory_allocator_fct_(nullptr),
+      memory_pointer_(nullptr), memory_size_(nullptr),
+      memory_allocator_fct_(nullptr),
       line_(0) {
         static int cnt = 0;
         std::ostringstream oss;
@@ -178,9 +184,9 @@ class WasmModule {
       return functions_;
     }
 
-    void GenerateMemoryBaseFunction();
     std::string GetMemoryBaseFunctionName() const;
     std::string GetMemoryBaseName() const;
+    std::string GetMemorySizeName() const;
 
     void Generate();
     void Dump();

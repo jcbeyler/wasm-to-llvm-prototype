@@ -204,6 +204,16 @@ segment {
   return SEGMENT;
 }
 
+memory_size {
+  LEX_DEBUG_PRINT("MEMORY SIZE\n");
+  return MEMORY_SIZE;
+}
+
+grow_memory {
+  LEX_DEBUG_PRINT("GROW MEMORY\n");
+  return GROW_MEMORY_TOKEN;
+}
+
 memory {
   LEX_DEBUG_PRINT("MEMORY\n");
   return MEMORY;

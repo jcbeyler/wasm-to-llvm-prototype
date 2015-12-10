@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
   BISON_PRINT("Parsing %s\n", argv[1]);
 
   FILE* f = freopen(argv[argc - 1], "r", stdin);
-  
+
   if (f == nullptr) {
     std::cerr << "File " << argv[argc - 1] << " not opening" << std::endl;
     PrintUsage(argv[0]);

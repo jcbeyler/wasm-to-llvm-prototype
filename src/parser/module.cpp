@@ -169,7 +169,7 @@ void WasmModule::Initialize() {
   pmb.populateModulePassManager(*fpm_);
 
   // Now generate the memory base.
-  GenerateMemoryBaseFunction();
+  GenerateMemoryBasedCode();
 
   // Generate the prototypes.
   for (auto it : functions_) {
@@ -189,26 +189,52 @@ std::string WasmModule::GetMemoryBaseName() const {
   return oss.str();
 }
 
+std::string WasmModule::GetMemorySizeName() const {
+  std::ostringstream oss;
+  oss << name_ << "_memory_size";
+  return oss.str();
+}
+
+void WasmModule::GenerateMemoryGlobals() {
+  // Get base types.
+  llvm::Type* char_type = llvm::Type::getInt8Ty(llvm::getGlobalContext());
+  llvm::Type* ptr_char_type = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
+
+  // Create memory pointer.
+  memory_pointer_ = new llvm::GlobalVariable(
+    *module_,
+    ptr_char_type,
+    false,
+    llvm::GlobalValue::CommonLinkage,
+    ConstantPointerNull::get(char_type->getPointerTo()),
+    GetMemoryBaseName().c_str(),
+    nullptr,
+    llvm::GlobalVariable::NotThreadLocal
+  );
+
+  // Create the memory size.
+  memory_size_ = new llvm::GlobalVariable(
+    *module_,
+    llvm::Type::getInt32Ty(llvm::getGlobalContext()),
+    false,
+    llvm::GlobalValue::CommonLinkage,
+    ConstantInt::get(llvm::getGlobalContext(), APInt(32, 0, false)),
+    GetMemorySizeName().c_str(),
+    nullptr,
+    llvm::GlobalVariable::NotThreadLocal
+  );
+}
+
+void WasmModule::GenerateMemoryBasedCode() {
+  GenerateMemoryGlobals();
+  GenerateMemoryBaseFunction();
+}
+
+
 void WasmModule::GenerateMemoryBaseFunction() {
   if (memory_ != -1) {
     // This will work until threading is not available but it should work well.
     std::string name = GetMemoryBaseFunctionName();
-
-    // Get base types.
-    llvm::Type* char_type = llvm::Type::getInt8Ty(llvm::getGlobalContext());
-    llvm::Type* ptr_char_type = llvm::Type::getInt8PtrTy(llvm::getGlobalContext());
-
-    // Create memory pointer.
-    memory_pointer_ = new llvm::GlobalVariable(
-        *module_,
-        ptr_char_type,
-        false,
-        llvm::GlobalValue::CommonLinkage,
-        ConstantPointerNull::get(char_type->getPointerTo()),
-        GetMemoryBaseName().c_str(),
-        nullptr,
-        llvm::GlobalVariable::NotThreadLocal
-        );
 
     // Now what we need is to create the method: it is a void fct(void) method.
     std::vector<llvm::Type*> params;
@@ -223,67 +249,73 @@ void WasmModule::GenerateMemoryBaseFunction() {
 
     // Now call malloc on it with the amount.
     llvm::Value* alloc_size = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, memory_, false));
-    llvm::Instruction* malloc_call = CallInst::CreateMalloc(builder.GetInsertBlock(),
+    llvm::Type* char_type = llvm::Type::getInt8Ty(llvm::getGlobalContext());
+    llvm::Instruction* malloc_result = CallInst::CreateMalloc(builder.GetInsertBlock(),
         llvm::Type::getInt32Ty(llvm::getGlobalContext()),
         char_type, alloc_size, nullptr,
         nullptr, "malloc");
-    builder.Insert(malloc_call, "calltmp");
+    builder.Insert(malloc_result, "calltmp");
 
-    // Now set that global variable to the return of the malloc.
-    builder.CreateStore(malloc_call, memory_pointer_, false);
+    // Now set the global variables with the malloc'd address and the size.
+    builder.CreateStore(malloc_result, memory_pointer_, false);
+    builder.CreateStore(alloc_size, memory_size_, false);
 
-    // Finally, add the code to copy in the segments.
-    if (segments_ != nullptr) {
-      // Get memcpy intrinsic.
-      llvm::Intrinsic::ID memcpy_intr = llvm::Intrinsic::memcpy;
-      std::vector<llvm::Type*> mem_args;
-      llvm::PointerType* ptr_type = llvm::PointerType::get(llvm::IntegerType::get(llvm::getGlobalContext(), 8), 0);
-      mem_args.push_back(ptr_type);
-      mem_args.push_back(ptr_type);
-      mem_args.push_back(llvm::Type::getInt32Ty(llvm::getGlobalContext()));
-
-      llvm::Function* intrinsic_fct = llvm::Intrinsic::getDeclaration(GetModule(), memcpy_intr, mem_args);
-
-      llvm::Type* type_64 = llvm::Type::getInt64Ty(llvm::getGlobalContext());
-      llvm::Value* local_base = builder.CreatePtrToInt(malloc_call, type_64, "base");
-
-      for (std::list<Segment*>::const_iterator it = segments_->begin();
-          it != segments_->end();
-          it++) {
-        Segment* segment = *it;
-
-        // Create the string pointer (this works for now since we don't have hex support).
-        llvm::Value* string = builder.CreateGlobalStringPtr(segment->GetData());
-
-        // Create destination.
-        llvm::Value* offset = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(64, segment->GetStart(), false));
-        llvm::Value* dest = builder.CreateAdd(local_base, offset, "dest");
-        dest = builder.CreateIntToPtr(dest,
-                                      llvm::Type::getInt8PtrTy(llvm::getGlobalContext()),
-                                      "ptrdest");
-
-        // Now we want to copy it in place.
-
-        // Populate arguments.
-        std::vector<llvm::Value*> args;
-        args.push_back(dest);
-        args.push_back(string);
-
-        // Create the length, align, and volatile.
-        llvm::Value* length = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, segment->GetLength(), false));
-        llvm::Value* align = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, 1, false));
-        llvm::Value* is_volatile = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, 0, false));
-        args.push_back(length);
-        args.push_back(align);
-        args.push_back(is_volatile);
-
-        builder.CreateCall(intrinsic_fct, args);
-      }
-    }
-
+    HandleSegments(builder, malloc_result);
     builder.CreateRetVoid();
   }
 }
+
+void WasmModule::HandleSegments(llvm::IRBuilder<>& builder, llvm::Instruction* malloc_result) {
+  // Finally, add the code to copy in the segments.
+  if (segments_ != nullptr) {
+    // Get memcpy intrinsic.
+    llvm::Intrinsic::ID memcpy_intr = llvm::Intrinsic::memcpy;
+    std::vector<llvm::Type*> mem_args;
+    llvm::PointerType* ptr_type = llvm::PointerType::get(llvm::IntegerType::get(llvm::getGlobalContext(), 8), 0);
+    mem_args.push_back(ptr_type);
+    mem_args.push_back(ptr_type);
+    mem_args.push_back(llvm::Type::getInt32Ty(llvm::getGlobalContext()));
+
+    llvm::Function* intrinsic_fct = llvm::Intrinsic::getDeclaration(GetModule(), memcpy_intr, mem_args);
+
+    llvm::Type* type_64 = llvm::Type::getInt64Ty(llvm::getGlobalContext());
+    llvm::Value* local_base = builder.CreatePtrToInt(malloc_result, type_64, "base");
+
+    for (std::list<Segment*>::const_iterator it = segments_->begin();
+        it != segments_->end();
+        it++) {
+      Segment* segment = *it;
+
+      // Create the string pointer (this works for now since we don't have hex support).
+      llvm::Value* string = builder.CreateGlobalStringPtr(segment->GetData());
+
+      // Create destination.
+      llvm::Value* offset = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(64, segment->GetStart(), false));
+      llvm::Value* dest = builder.CreateAdd(local_base, offset, "dest");
+      dest = builder.CreateIntToPtr(dest,
+          llvm::Type::getInt8PtrTy(llvm::getGlobalContext()),
+          "ptrdest");
+
+      // Now we want to copy it in place.
+
+      // Populate arguments.
+      std::vector<llvm::Value*> args;
+      args.push_back(dest);
+      args.push_back(string);
+
+      // Create the length, align, and volatile.
+      llvm::Value* length = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, segment->GetLength(), false));
+      llvm::Value* align = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, 1, false));
+      llvm::Value* is_volatile = llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, 0, false));
+      args.push_back(length);
+      args.push_back(align);
+      args.push_back(is_volatile);
+
+      builder.CreateCall(intrinsic_fct, args);
+    }
+  }
+}
+
 
 void WasmModule::Dump() {
   BISON_PRINT("Module Dump:\n");
