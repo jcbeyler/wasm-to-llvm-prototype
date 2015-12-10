@@ -457,6 +457,11 @@ store {
   return STORE;
 }
 
+offset {
+  LEX_DEBUG_PRINT("OFFSET\n");
+  return OFFSET_TOKEN;
+}
+
 align {
   LEX_DEBUG_PRINT("ALIGN\n");
   return ALIGN_TOKEN;

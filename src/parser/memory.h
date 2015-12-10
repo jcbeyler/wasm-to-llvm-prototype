@@ -27,6 +27,52 @@
 #include "operation.h"
 #include "simple.h"
 
+class OffsetAlignInformation {
+  protected:
+    bool offset_defined_;
+    bool align_defined_;
+
+    uint32_t offset_;
+    uint32_t align_;
+
+  public:
+    OffsetAlignInformation() : offset_defined_(false),
+                               align_defined_(false),
+                               offset_(0), align_(1) {
+    }
+
+    void SetOffset(uint32_t offset) {
+      assert(offset_defined_ == false);
+      offset_ = offset;
+      offset_defined_ = true;
+    }
+
+    void SetAlign(uint32_t align) {
+      // Check that we only have one align here.
+      assert(align_defined_ == false);
+      align_ = align;
+      align_defined_ = true;
+    }
+
+    int GetAlign() const {
+      assert(align_defined_ == true);
+      return align_;
+    }
+
+    int GetOffset() const {
+      assert(offset_defined_ == true);
+      return offset_;
+    }
+
+    int IsOffsetDefined() const {
+      return offset_defined_;
+    }
+
+    int IsAlignDefined() const {
+      return align_defined_;
+    }
+};
+
 class MemoryExpression : public Expression {
   protected:
     Expression* address_;
@@ -34,11 +80,26 @@ class MemoryExpression : public Expression {
     bool sign_;
     ETYPE type_;
 
+    uint32_t offset_;
+    uint32_t align_;
+
   public:
-    MemoryExpression(size_t size) : address_(nullptr), size_(size), sign_(0), type_(VOID) {
+    MemoryExpression(size_t size) : address_(nullptr), size_(size), sign_(0), type_(VOID),
+                                    offset_(0), align_(size) {
     }
 
-    MemoryExpression(Expression* address = nullptr, size_t size = 0, bool sign = false, ETYPE type = VOID) : address_(address), size_(size), sign_(sign), type_(type) {
+    MemoryExpression(Expression* address = nullptr, size_t size = 0, bool sign = false, ETYPE type = VOID) : address_(address), size_(size), sign_(sign), type_(type),
+                      offset_(0), align_(size) {
+    }
+
+    void SetOffsetAlign(OffsetAlignInformation* oai) {
+      if (oai->IsOffsetDefined() == true) {
+        offset_ = oai->GetOffset();
+      }
+
+      if (oai->IsAlignDefined() == true) {
+        align_ = oai->GetAlign();
+      }
     }
 
     void SetType(ETYPE t) {
