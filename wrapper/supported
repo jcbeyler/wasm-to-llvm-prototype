@@ -28,5 +28,6 @@ memory_redundancy.wast
 names.wast
 nan-propagation.wast
 switch.wast
+store_retval.wast
 traps.wast
 unreachable.wast

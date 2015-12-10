@@ -174,13 +174,15 @@ llvm::Value* Store::ResizeIntegerIfNeed(llvm::Value* value,
 
 llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   llvm::Value* address = GetPointer(fct, builder);
-  llvm::Value* value = value_->Codegen(fct, builder);
+  llvm::Value* original_value = value_->Codegen(fct, builder);
 
   // Check if the type of what we are storing is the same type as what we have like size.
-  llvm::Type* value_type = value->getType();
+  llvm::Type* value_type = original_value->getType();
 
   llvm::Type::TypeID value_type_id = value_type->getTypeID();
 
+  // Handle integer a bit specially: we might want a resize.
+  llvm::Value* value = original_value;
   if (value_type_id == llvm::Type::IntegerTyID) {
     value = ResizeIntegerIfNeed(value, value_type, sign_, builder);
   } else {
@@ -188,5 +190,5 @@ llvm::Value* Store::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
   }
 
   builder.CreateStore(value, address, "store");
-  return value;
+  return original_value;
 }

@@ -20,6 +20,34 @@
 #include <typeinfo>
 
 extern "C" {
+  static void handle_float(float val) {
+    // Hack right now to support the testsuite:
+    //   From what I've quickly seen, consider a floating point
+    //     with nothing after the decimal point (ie 5.0)
+    //   printf will either print 5 or 5.0;
+    // The testsuite wants 5.
+    if (ceil(val) == val) {
+      int tmp = val;
+      printf("%d. : f32\n", tmp);
+    } else {
+      printf("%f : f32\n", val);
+    }
+  }
+
+  static void handle_double(double val) {
+    // Hack right now to support the testsuite:
+    //   From what I've quickly seen, consider a floating point
+    //     with nothing after the decimal point (ie 5.0)
+    //   printf will either print 5 or 5.0;
+    // The testsuite wants 5.
+    if (ceil(val) == val) {
+      int tmp = val;
+      printf("%d. : f64\n", tmp);
+    } else {
+      printf("%f : f64\n", val);
+    }
+  }
+
   // This is not scalable but right now, it will work.
   void spectest_print_i32(int32_t val) {
     printf("%d : i32\n", val);
@@ -29,31 +57,21 @@ extern "C" {
     printf("%ld : i64\n", val);
   }
 
+  void spectest_print_f64(double val) {
+    handle_double(val);
+  }
+
+  void spectest_print_f32(float val) {
+    handle_float(val);
+  }
+
   void spectest_print_i32_f32(int32_t val, float fval) {
-    // Hack right now to support the testsuite:
-    //   From what I've quickly seen, consider a floating point
-    //     with nothing after the decimal point (ie 5.0)
-    //   printf will either print 5 or 5.0;
-    // The testsuite wants 5.
-    if (ceil(fval) == fval) {
-      int tmp = fval;
-      printf("%d : i32\n%d. : f32\n", val, tmp);
-    } else {
-      printf("%d : i32\n%f : f32\n", val, fval);
-    }
+    printf("%d : i32\n", val);
+    handle_float(fval);
   }
 
   void spectest_print_i64_f64(int64_t val1, double val2) {
-    // Hack right now to support the testsuite:
-    //   From what I've quickly seen, consider a floating point
-    //     with nothing after the decimal point (ie 5.0)
-    //   printf will either print 5 or 5.0;
-    // The testsuite wants 5.
-    if (ceil(val2) == val2) {
-      int64_t tmp = val2;
-      printf("%ld : i64\n%ld. : f64\n", val1, tmp);
-    } else {
-      printf("%ld : i64\n%f : f64\n", val1, val2);
-    }
+    printf("%ld : i64\n", val1);
+    handle_double(val2);
   }
 }
