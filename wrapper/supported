@@ -1,3 +1,4 @@
+address.wast
 ../perf_tests/sum_array/sum.wast
 ../perf_tests/vector/mul/vector.wast
 ../perf_tests/vector/daxpy/vector.wast

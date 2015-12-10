@@ -55,6 +55,7 @@ extern int yylex (void);
   class Globals;
   class Load;
   class Local;
+  class OffsetAlignInformation;
   class Operation;
   enum OPERATION;
   class Store;
@@ -99,6 +100,7 @@ extern int yylex (void);
   LoopNaming* ln;
   Local* local;
   WasmModule* m;
+  OffsetAlignInformation* oai;
   Operation* o;
   OPERATION op;
   Store* st;
@@ -136,7 +138,7 @@ extern int yylex (void);
 %token UNREACHABLE_TOKEN
 %token CONST
 %token LABEL
-%token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN
+%token MEMORY STORE LOAD SEGMENT ALIGN_TOKEN IMPORT_TOKEN OFFSET_TOKEN
 
 %type<voidptr> FUNCTION_FIELDS CASES LIST_CASES IMPORT_PARAMS_RETURN
 %type<voidptr> EXPRESSIONS CASE CASE_TABLE SEGMENTS
@@ -157,6 +159,7 @@ extern int yylex (void);
 %type<ln> LOOP_NAMING
 %type<local> TYPE_LIST PARAM LOCAL LOCAL_ELEMS
 %type<m> MODULE MODULE_ELEMS
+%type<oai> POTENTIAL_ALIGN_OR_OFFSET
 %type<o> BINOP UNOP
 %type<o> POTENTIAL_SIGNED_BINOP POTENTIAL_SIGNED_UNOP POTENTIAL_SIGNED_TRUNC
 %type<op> LOAD STORE
@@ -631,19 +634,36 @@ POTENTIAL_SIGNED_STORE:
     $$ = st;
   }
 
-ALIGN_OR_NOT:
-  ALIGN_TOKEN '=' INTEGER |
+POTENTIAL_ALIGN_OR_OFFSET:
+  OFFSET_TOKEN '=' INTEGER POTENTIAL_ALIGN_OR_OFFSET {
+    OffsetAlignInformation* info = $4;
+    info->SetOffset($3);
+    $$ = info;
+  } |
+  ALIGN_TOKEN '=' INTEGER POTENTIAL_ALIGN_OR_OFFSET {
+    OffsetAlignInformation* info = $4;
+    info->SetAlign($3);
+    $$ = info;
+  } | {
+    $$ = new OffsetAlignInformation();
+  }
 
 MEMORY_OPERATION:
-  TYPE '.' POTENTIAL_SIGNED_LOAD ALIGN_OR_NOT EXPRESSION {
+  TYPE '.' POTENTIAL_SIGNED_LOAD POTENTIAL_ALIGN_OR_OFFSET EXPRESSION {
     Load* ld = $3;
     ld->SetType($1);
     ld->SetAddress($5);
 
     // Size might need to get updated here.
     ld->UpdateSize();
-    $$ = ld; } |
-  TYPE '.' POTENTIAL_SIGNED_STORE ALIGN_OR_NOT EXPRESSION EXPRESSION {
+
+    // Set the offset and alignment.
+    OffsetAlignInformation* info = $4;
+    ld->SetOffsetAlign(info);
+
+    $$ = ld;
+  } |
+  TYPE '.' POTENTIAL_SIGNED_STORE POTENTIAL_ALIGN_OR_OFFSET EXPRESSION EXPRESSION {
     Store* st = $3;
     st->SetType($1);
     st->SetAddress($5);
@@ -651,7 +671,13 @@ MEMORY_OPERATION:
 
     // Size might need to get updated here.
     st->UpdateSize();
-    $$ = st; }
+
+    // Set the offset and alignment.
+    OffsetAlignInformation* info = $4;
+    st->SetOffsetAlign(info);
+
+    $$ = st;
+  }
 
 EXPRESSION_INNER:
     NOP { $$ = new Nop(); } |
