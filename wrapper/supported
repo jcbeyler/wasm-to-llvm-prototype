@@ -30,7 +30,7 @@ memory_trap.wast
 names.wast
 nan-propagation.wast
 resizing.wast
-switch.wast
 store_retval.wast
+switch.wast
 traps.wast
 unreachable.wast
