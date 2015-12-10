@@ -24,6 +24,7 @@
 
 #include "base_expression.h"
 #include "enums.h"
+#include "module.h"
 #include "operation.h"
 #include "simple.h"
 
@@ -229,5 +230,15 @@ class Load : public MemoryExpression {
       BISON_PRINT(")");
     }
 };
+
+class MemorySize : public Expression {
+  public:
+    virtual llvm::Value* Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+      WasmModule* module = fct->GetModule();
+      llvm::GlobalVariable* mem_size = module->GetMemorySize();
+      return builder.CreateLoad(mem_size, "mem_size");
+    }
+};
+
 
 #endif

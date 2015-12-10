@@ -26,6 +26,7 @@ labels.wast
 left-to-right.wast
 memory.wast
 memory_redundancy.wast
+memory_trap.wast
 names.wast
 nan-propagation.wast
 switch.wast

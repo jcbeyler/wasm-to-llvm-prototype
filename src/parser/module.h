@@ -176,6 +176,10 @@ class WasmModule {
       return memory_pointer_;
     }
 
+    llvm::GlobalVariable* GetMemorySize() const {
+      return memory_size_;
+    }
+
     const std::string& GetHashName() const {
       return hash_name_;
     }
