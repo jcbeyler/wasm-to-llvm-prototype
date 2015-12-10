@@ -71,6 +71,18 @@ llvm::Value* Const::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
     }
     case FLOAT_64:
       return llvm::ConstantFP::get(llvm::getGlobalContext(), APFloat(value_->GetDouble()));
+    case INT_1: {
+      int val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(1, val, false));
+    }
+    case INT_8: {
+      int64_t val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(8, val, false));
+    }
+    case INT_16: {
+      int val = value_->GetInteger();
+      return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(16, val, false));
+    }
     case INT_32: {
       int val = value_->GetInteger();
       return llvm::ConstantInt::get(llvm::getGlobalContext(), APInt(32, val, false));
@@ -565,4 +577,32 @@ llvm::Value* Unreachable::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder)
   llvm::Function* intrinsic_fct = wasm_module->GetOrCreateIntrinsic(intrinsic);
   std::vector<Value*> no_arg;
   return builder.CreateCall(intrinsic_fct, no_arg);
+}
+
+llvm::Value* SelectExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder) {
+  // First generate the condition, first, and second.
+  llvm::Value* cond = cond_->Codegen(fct, builder);
+
+  // We need to handle the unreachable case here because the LLVM builder
+  //   won't like us passing a trap call...
+  // This is not perfect and might need more work later down the road.
+  if (dynamic_cast<Unreachable*>(cond_) != nullptr) {
+    return cond;
+  }
+
+  llvm::Value* first = first_->Codegen(fct, builder);
+
+  if (dynamic_cast<Unreachable*>(first_) != nullptr) {
+    return first;
+  }
+
+  llvm::Value* second = second_->Codegen(fct, builder);
+
+  if (dynamic_cast<Unreachable*>(second_) != nullptr) {
+    return second;
+  }
+
+  cond = TransformCondition(cond, builder);
+
+  return builder.CreateSelect(cond, first, second, "select");
 }

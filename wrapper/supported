@@ -17,6 +17,7 @@ float_memory.wast
 float_misc.wast
 forward.wast
 functions.wast
+has_feature.wast
 i32.wast
 i64.wast
 imports.wast
@@ -30,7 +31,8 @@ memory_trap.wast
 names.wast
 nan-propagation.wast
 resizing.wast
-switch.wast
+select.wast
 store_retval.wast
+switch.wast
 traps.wast
 unreachable.wast

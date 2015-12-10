@@ -378,3 +378,21 @@ ETYPE ConvertType2ETYPE(llvm::Type* type) {
 const char* GetTypeName(llvm::Type* type) {
   return GetETypeName(ConvertType2ETYPE(type));
 }
+
+llvm::Value* TransformCondition(llvm::Value* value, llvm::IRBuilder<>& builder) {
+  llvm::Type* type = value->getType();
+
+  if (type->isIntegerTy(1) == false) {
+    if (type->isFloatingPointTy()) {
+      llvm::Value* zero = llvm::ConstantFP::get(llvm::getGlobalContext(), llvm::APFloat(0.0));;
+      // Not sure ordered is what we want but let us assume for now.
+      return builder.CreateFCmpONE(value, zero, "cmp_zero");
+    } else {
+      llvm::Value* zero = llvm::ConstantInt::get(llvm::getGlobalContext(), llvm::APInt(type->getIntegerBitWidth(), 0, false));
+      return builder.CreateICmpNE(value, zero, "cmp_zero");
+    }
+  }
+
+  // Nothing to be done.
+  return value;
+}
