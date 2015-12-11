@@ -6,7 +6,7 @@ The Spec implementation is the reference for semantical questions. Here, we are 
 
 Currently, it can
 
-* *parse* more than half of the spec test cases
+* *parse* almost all test cases (function pointers and stopping runaway recursion are left)
 * *generate* LLVM IR and dumps it for each module file
 * *generate* the assertion opcodes to validate the LLVM IR
 * *generate* a single *execute_asserts* method that calls each assert, allowing easy testing with a very simple driver
@@ -24,13 +24,13 @@ The prototype does not do:
 
 * Assert traps are not yet supported (I tried but got side-tracked, it's a WIP)
 ** It currently just signals that traps are not supported...
+* Assert invalid are ignored right now.
 * Probably a lot more things
 
 Things that I know we need to improve:
 
 * The makefile; really did a hack job there
 * The flex/bison analyzers will probably need to get ripped out and we could put something else if we want to keep the IR -> LLVM IR
-* The coding convention probably
 * The uni-testing of the code itself, I've used asserts to ensure that I find the todos left behind my trail blazing
 * There are TODOs in the code that need to be handled
 
