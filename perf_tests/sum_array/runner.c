@@ -20,8 +20,8 @@
 #include "sum.h"
 
 // Wasm methods.
-int wp_setter(int);
-int wp_sum(int);
+int wm_1_setter(int);
+int wm_1_sum(int);
 
 int init_wasm(int n) {
   // Call the setter first.
@@ -33,7 +33,7 @@ int init_wasm(int n) {
   }
 
   // Set the array.
-  wp_setter(n);
+  wm_1_setter(n);
 
   return 1;
 }
@@ -51,7 +51,7 @@ int run_wasm(int n) {
 
   for (i = 0; i < 1000; i++) {
     // Sum the array.
-    result += wp_sum(n);
+    result += wm_1_sum(n);
   }
 
   return result;
