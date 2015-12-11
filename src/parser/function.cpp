@@ -98,7 +98,9 @@ void WasmFunction::GeneratePrototype(WasmModule* module) {
   module_ = module;
 
   BISON_PRINT("Generating %s\n", name_.c_str());
-  Dump(0);
+  if (DEBUG != 0) {
+    Dump(0);
+  }
 
   // Start by populating and finding the parameters in LLVM form.
   Populate();
