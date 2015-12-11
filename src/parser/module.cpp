@@ -165,7 +165,7 @@ void WasmModule::Initialize() {
   fpm_ = new legacy::PassManager();
 
   llvm::PassManagerBuilder pmb;
-  pmb.OptLevel = 1;
+  pmb.OptLevel = 2;
   pmb.populateModulePassManager(*fpm_);
 
   // Now generate the memory base.

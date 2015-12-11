@@ -20,8 +20,8 @@
 #include "vector.h"
 
 // Wasm methods.
-int wp_vector_setter(int);
-int wp_vector_mul(int);
+int wm_1_vector_setter(int);
+int wm_1_vector_mul(int);
 
 int init_wasm(int n) {
   // Call the setter first.
@@ -33,7 +33,7 @@ int init_wasm(int n) {
   }
 
   // Set the array.
-  wp_setter(n);
+  wm_1_setter(n);
 
   return 1;
 }
@@ -51,7 +51,7 @@ int run_wasm(int n) {
 
   for (i = 0; i < 1000; i++) {
     // Sum the array.
-    result += wp_daxpy(n, n);
+    result += wm_1_daxpy(n, n);
   }
 
   return result;
