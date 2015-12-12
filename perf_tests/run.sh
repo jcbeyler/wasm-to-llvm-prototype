@@ -42,12 +42,12 @@ for name in $dir; do
   wast=`ls $name/*wast`
 
   if [ ! -e $wast ]; then
-    echo "Skipping $wast, does not exist"
+    echo "Skipping $name, wast file does not exist"
   else
     # Clean up
     rm obj/*ll obj/*s 2> /dev/null
 
-    # Build the llvm IR
+    # Build the llvm IR.
     $exe $wast
 
     if [ $? -ne 0 ]; then
