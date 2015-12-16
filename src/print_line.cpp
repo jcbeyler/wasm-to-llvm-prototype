@@ -26,9 +26,7 @@ void PrintLine(const char* name, int line) {
   // Get the line before the parameter.
   int cnt = 0;
   while (cnt < line - 1) {
-    bool b = std::getline(input, s);
-
-    if (b == false) {
+    if (!std::getline(input, s)) {
       std::cerr << "Error finding the error line" << std::endl;
       return;
     }
@@ -36,8 +34,7 @@ void PrintLine(const char* name, int line) {
   }
 
   // Now get the error line.
-  bool b = std::getline(input, s);
-  if (b == false) {
+  if (!std::getline(input, s)) {
     std::cerr << "Error finding the error line" << std::endl;
     return;
   }
