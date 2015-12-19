@@ -151,11 +151,11 @@ class WasmFunction {
     llvm::AllocaInst* GetVariable(const char* name) const;
     llvm::AllocaInst* GetVariable(size_t idx) const;
 
-    llvm::AllocaInst* CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
+    llvm::AllocaInst* CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder, bool is_argument);
 
     void PopulateLocalHolders(llvm::IRBuilder<>& builder);
     void PopulateAllocas(llvm::IRBuilder<>& builder);
-    llvm::AllocaInst* Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder);
+    llvm::AllocaInst* Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder, bool is_argument = false);
 
     void Generate();
     void GeneratePrototype(WasmModule* module);
