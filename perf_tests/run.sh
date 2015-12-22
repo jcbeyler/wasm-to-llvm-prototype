@@ -68,6 +68,7 @@ for name in $dir; do
     # Create the test exec.
     gcc -O2 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O2 -lrt
     gcc -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O3 -lrt
+    clang -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_clang_O3 -lrt
 
     if [ $? -ne 0 ]; then
       echo "Build of test $wast failed. Bailing."
@@ -80,12 +81,11 @@ for name in $dir; do
     fi
 
     # Run the test.
-    echo "Wasm:"
-    obj/testit_O2 -w $args
-    echo "GCC in O2"
-    obj/testit_O2 -c $args
-    echo "GCC in O3"
-    obj/testit_O3 -c $args
+    echo $args
+    obj/testit_O2 -w -v $args
+    obj/testit_O2 -c -v $args
+    obj/testit_O3 -c -v $args
+    obj/testit_clang_O3 -c -v $args
 
     if [ $? -ne 0 ]; then
       echo "Test failed: $wast. Bailing."

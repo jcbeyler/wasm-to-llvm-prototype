@@ -134,17 +134,17 @@ void WasmFunction::PopulateLocalHolders(llvm::IRBuilder<>& builder) {
   }
 }
 
-llvm::AllocaInst* WasmFunction::Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder) {
+llvm::AllocaInst* WasmFunction::Allocate(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder, bool is_argument) {
   // If we have a name, fill it up.
   llvm::AllocaInst* alloca_var = nullptr;
   if (name != nullptr) {
-    alloca_var = CreateAlloca(name, type, builder);
+    alloca_var = CreateAlloca(name, type, builder, is_argument);
     map_values_[name] = alloca_var;
   } else {
     std::ostringstream oss;
     oss << "var_" << vector_values_.size();
     // Create an anonymous one.
-    alloca_var = CreateAlloca(oss.str().c_str(), type, builder);
+    alloca_var = CreateAlloca(oss.str().c_str(), type, builder, is_argument);
   }
 
   // Always fill the vector.
@@ -193,7 +193,7 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
       arg.setName(elem->GetName());
     }
 
-    llvm::AllocaInst* alloca_var = Allocate(elem->GetName(), type, builder);
+    llvm::AllocaInst* alloca_var = Allocate(elem->GetName(), type, builder, true);
 
     // Now create store towards that alloca.
     builder.CreateStore(&arg, alloca_var);
@@ -206,11 +206,15 @@ void WasmFunction::PopulateAllocas(llvm::IRBuilder<>& builder) {
   PopulateLocalHolders(builder);
 }
 
-llvm::AllocaInst* WasmFunction::CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder) {
+llvm::AllocaInst* WasmFunction::CreateAlloca(const char* name, llvm::Type* type, llvm::IRBuilder<>& builder, bool is_argument) {
   llvm::AllocaInst* res = builder.CreateAlloca(type, 0, name);
-  llvm::Value* zero = Constant::getNullValue(type);
 
-  builder.CreateStore(zero, res);
+  // If it's an argument, do not store first 0.
+  if (is_argument == false) {
+    llvm::Value* zero = Constant::getNullValue(type);
+
+    builder.CreateStore(zero, res);
+  }
 
   return res;
 }

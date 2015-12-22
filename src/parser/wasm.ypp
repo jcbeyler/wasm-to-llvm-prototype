@@ -186,19 +186,19 @@ START: FILE {
 }
 
 FILE:
-  MODULE FILE {
+  FILE MODULE {
     // Add the module to the file.
-    WasmModule* module = $1;
-    WasmFile* file = $2;
+    WasmModule* module = $2;
+    WasmFile* file = $1;
     file->AddModule(module);
 
     // Propagate this up.
     $$ = file;
   } |
-  SCRIPT_ELEM FILE {
+  FILE SCRIPT_ELEM {
     // Add a script element.
-    WasmScriptElem* wse = $1;
-    WasmFile* file = $2;
+    WasmScriptElem* wse = $2;
+    WasmFile* file = $1;
 
     if (wse != nullptr) {
       // We want the file to know about the script request.
@@ -540,10 +540,10 @@ SELECT:
   }
 
 EXPRESSIONS:
-  EXPRESSION EXPRESSIONS {
-    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($2);
-    Expression* expr = $1;
-    list->push_front(expr);
+  EXPRESSIONS EXPRESSION {
+    std::list<Expression*>* list = static_cast<std::list<Expression*>* >($1);
+    Expression* expr = $2;
+    list->push_back(expr);
     $$ = list;
   }
   | /* Empty */ { $$ = new std::list<Expression*>(); }
