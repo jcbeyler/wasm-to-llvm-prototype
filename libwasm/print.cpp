@@ -52,6 +52,10 @@ extern "C" {
     printf("%d : i32\n", val);
   }
 
+  void spectest_print_i32_i32(int32_t val, int32_t val2) {
+    printf("%d %d : i32 i32\n", val, val2);
+  }
+
   void spectest_print_i64(int64_t val) {
     printf("%ld : i64\n", val);
   }
