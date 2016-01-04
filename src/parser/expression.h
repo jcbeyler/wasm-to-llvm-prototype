@@ -133,9 +133,23 @@ class IfExpression : public ConditionalExpression {
     Expression* false_cond_;
     bool should_merge_;
 
+    // Names to help debugging later.
+    std::string end_block_name_;
+    std::string true_block_name_;
+    std::string false_block_name_;
+
   public:
     IfExpression(Expression* c, Expression* t, Expression* f = nullptr) :
       ConditionalExpression(c), true_cond_(t), false_cond_(f), should_merge_(true) {
+        end_block_name_ = "end_block";
+        true_block_name_ = "true_block";
+        false_block_name_ = "false_block";
+    }
+
+    void SetBlockNames(const std::string& true_name, const std::string& false_name, const std::string& end_name) {
+      true_block_name_ = true_name;
+      false_block_name_ = false_name;
+      end_block_name_ = end_name;
     }
 
     void SetTrue(Expression* expr) {
