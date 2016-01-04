@@ -16,7 +16,7 @@
 
 echo "Running perf tests"
 
-exe=llvm_wasm
+exe=${PWD}/llvm_wasm
 
 if [ ! -e $exe ]; then
   echo "Build llvm_wasm first"
