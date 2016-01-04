@@ -216,11 +216,11 @@ llvm::Value* IfExpression::Codegen(WasmFunction* fct, llvm::IRBuilder<>& builder
   assert(true_cond_ != nullptr);
 
   // Add it automatically to the function.
-  true_bb = BasicBlock::Create(llvm::getGlobalContext(), "true", llvm_fct);
+  true_bb = BasicBlock::Create(llvm::getGlobalContext(), true_block_name_, llvm_fct);
 
   // The other two will wait before being emitted.
-  false_bb = BasicBlock::Create(llvm::getGlobalContext(), "false");
-  end_bb = BasicBlock::Create(llvm::getGlobalContext(), "end_if");
+  false_bb = BasicBlock::Create(llvm::getGlobalContext(), false_block_name_);
+  end_bb = BasicBlock::Create(llvm::getGlobalContext(), end_block_name_);
 
   builder.CreateCondBr(cond_value, true_bb, false_bb);
 

@@ -201,6 +201,7 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
 
   ReallyDivRem* rdr = new ReallyDivRem(left_, right_, div, sign, type);
   IfExpression* left_test = new IfExpression(cond, left, rdr);
+  left_test->SetBlockNames("div_left_true", "div_left_false", "div_left_end");
 
   // Now we generate the test on the right side: is it -1?
   vh = new ValueHolder(-1);
@@ -210,10 +211,11 @@ llvm::Value* Binop::HandleDivRem(WasmFunction* fct, llvm::IRBuilder<>& builder, 
   cond = new Binop(op, right_, minus_one);
 
   rdr = new ReallyDivRem(left_, right_, div, sign, type);
-  IfExpression* full_test = new IfExpression(cond, left_test, rdr);
+  IfExpression* final = new IfExpression(cond, left_test, rdr);
+  final->SetBlockNames("div_minus1_true", "div_minus1_false", "div_minus1_end");
 
   // Now generate code.
-  return full_test->Codegen(fct, builder);
+  return final->Codegen(fct, builder);
 }
 
 llvm::Value* Binop::HandleIntrinsic(WasmFunction* fct, llvm::IRBuilder<>& builder) {

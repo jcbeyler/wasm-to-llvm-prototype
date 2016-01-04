@@ -36,6 +36,11 @@ for name in $dir; do
     continue
   fi
 
+  if [ -e $name/.skip ]; then
+    echo "Skipping $name"
+    continue
+  fi
+
   echo "Running perf test: $name"
 
   # Find the wast file.
@@ -82,10 +87,10 @@ for name in $dir; do
 
     # Run the test.
     echo $args
-    obj/testit_O2 -w -v $args
-    obj/testit_O2 -c -v $args
-    obj/testit_O3 -c -v $args
-    obj/testit_clang_O3 -c -v $args
+    obj/testit_O2 -w -v $args -s "Wasm"
+    obj/testit_O2 -c -v $args -s "Gcc-O2"
+    obj/testit_O3 -c -v $args -s "Gcc-O3"
+    obj/testit_clang_O3 -c -v $args -s "Clang-O3"
 
     if [ $? -ne 0 ]; then
       echo "Test failed: $wast. Bailing."
