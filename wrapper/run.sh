@@ -25,7 +25,7 @@ fi
 echo "Test list is:"
 echo $list
 
-exe=llvm_wasm
+exe=${PWD}/llvm_wasm
 our_log=obj/test_output
 diff_file=obj/test_output_diff
 
