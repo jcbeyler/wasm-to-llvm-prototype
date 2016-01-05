@@ -32,7 +32,6 @@ class WasmFile {
     }
 
     void AddModule(WasmModule* module) {
-      // Currently we only support one module.
       modules_.push_back(module);
       module->SetWasmFile(this);
     }

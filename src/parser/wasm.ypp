@@ -186,19 +186,19 @@ START: FILE {
 }
 
 FILE:
-  FILE MODULE {
+  MODULE FILE {
     // Add the module to the file.
-    WasmModule* module = $2;
-    WasmFile* file = $1;
+    WasmModule* module = $1;
+    WasmFile* file = $2;
     file->AddModule(module);
 
     // Propagate this up.
     $$ = file;
   } |
-  FILE SCRIPT_ELEM {
+  SCRIPT_ELEM FILE {
     // Add a script element.
-    WasmScriptElem* wse = $2;
-    WasmFile* file = $1;
+    WasmScriptElem* wse = $1;
+    WasmFile* file = $2;
 
     if (wse != nullptr) {
       // We want the file to know about the script request.
