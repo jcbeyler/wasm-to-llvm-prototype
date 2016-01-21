@@ -4,7 +4,7 @@
 
 EXE = llvm_wasm
 HEADERS = $(wildcard src/*h) $(wildcard src/parser/*h) $(wildcard src/passes/*h)
-GENERATED = obj/lex.yy.c obj/wasm.tab.cpp
+GENERATED = obj/lex.yy.cpp obj/wasm.tab.cpp
 GENERATED_OBJ = obj/lex.yy.o obj/wasm.tab.o
 SRC_OBJ = $(patsubst src/%.cpp, obj/%.o, $(wildcard src/*.cpp))
 PARSER_SRC_OBJ = $(patsubst src/parser/%.cpp, obj/%.o, $(wildcard src/parser/*.cpp))
@@ -21,10 +21,10 @@ LIBS = -ly -lfl -L$(LIBDIR) -lLLVM
 $(EXE): ${OBJS} $(HEADERS)
 	g++ -o $@ ${CFLAGS} ${OBJS} ${LIBS}
 
-obj/lex.yy.c: src/parser/wasm.flex obj/wasm.tab.hpp $(HEADERS)
+obj/lex.yy.cpp: src/parser/wasm.flex obj/wasm.tab.hpp $(HEADERS)
 	flex -o $@ $<
 
-obj/lex.yy.o: obj/lex.yy.c
+obj/lex.yy.o: obj/lex.yy.cpp
 	g++ -c -o $@ $< ${CFLAGS}
 
 obj/wasm.tab.o: obj/wasm.tab.cpp obj/wasm.tab.hpp
