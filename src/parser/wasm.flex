@@ -26,6 +26,11 @@
 #define LEX_DEBUG_PRINT(...) \
     DEBUG_PRINT(LEX_GROUP, LEX_VERBOSITY, __VA_ARGS__)
 
+int yylex();
+int yylex_cpp() {
+  return yylex();
+}
+
 static void FixString(char* str) {
   char* start = str;
   // Quick way of changing \nn into one character.
