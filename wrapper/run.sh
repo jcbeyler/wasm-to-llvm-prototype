@@ -56,7 +56,7 @@ for name in $list; do
 
     # Create the .s files
     for ll in obj/*ll; do
-      llc-3.7 $ll
+      llc $ll
 
       if [ $? -ne 0 ]; then
         echo "LLVM transformation of $ll failed. Bailing."

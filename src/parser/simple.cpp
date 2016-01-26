@@ -37,12 +37,17 @@ bool ValueHolder::Convert(VH_TYPE dest) {
         // Nan is a bit special: strtof seems to not take the sign well.
         //   Also some implementations make strtof go for silent nans instead.
         if (strstr(s, "nan") != nullptr) {
+          // Get the ( character if it exists.
+          char* ptr = strchr(s, '(');
+
+          if (ptr != nullptr) {
+            // In this case, our base value for nan is not right.
+            value_.i = 0x7f800000;
+          }
+
           if (*s == '-') {
             value_.f *= -1;
           }
-
-          // Get the ( character if it exists.
-          char* ptr = strchr(s, '(');
 
           if (ptr != nullptr) {
             // Go to next character.
@@ -70,13 +75,19 @@ bool ValueHolder::Convert(VH_TYPE dest) {
         // Nan is a bit special: strtof seems to not take the sign well.
         //   Also some implementations make strtof go for silent nans instead.
         if (strstr(s, "nan") != nullptr) {
+          // Get the ( character if it exists.
+          char* ptr = strchr(s, '(');
+
+          if (ptr != nullptr) {
+            // In this case, our base value for nan is not right.
+            value_.i = 0x7ff0000000000000ul;
+          }
+
           if (*s == '-') {
             value_.d *= -1;
           }
 
-          // Get the ( character if it exists.
-          char* ptr = strchr(s, '(');
-
+          // And do more work, we separated the ptr != nullptr to get the * -1 in general.
           if (ptr != nullptr) {
             // Go to next character.
             ptr++;

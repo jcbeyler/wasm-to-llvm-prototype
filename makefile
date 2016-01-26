@@ -16,13 +16,13 @@ OBJS = $(SRC_OBJ) $(PARSER_SRC_OBJ) $(GENERATED_OBJ) $(PASSES_SRC_OBJ)
 INCLUDEDIR = -I`llvm-config --includedir` -Isrc/parser -Isrc -Isrc/passes
 CFLAGS = -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -g -std=gnu++0x $(INCLUDEDIR) -O3
 LIBDIR = `llvm-config --libdir`
-LIBS = -ly -lfl -L$(LIBDIR) -lLLVM
+LIBS = -L$(LIBDIR) -lLLVM
 
 $(EXE): ${OBJS} $(HEADERS)
 	g++ -o $@ ${CFLAGS} ${OBJS} ${LIBS}
 
 obj/lex.yy.cpp: src/parser/wasm.flex obj/wasm.tab.hpp $(HEADERS)
-	flex -o $@ $<
+	flex --noyywrap -o $@ $<
 
 obj/lex.yy.o: obj/lex.yy.cpp
 	g++ -c -o $@ $< ${CFLAGS}
