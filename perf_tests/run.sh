@@ -71,9 +71,9 @@ for name in $dir; do
     done
 
     # Create the test exec.
-    gcc -O2 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O2 -lrt
-    gcc -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_O3 -lrt
-    clang -O3 obj/wasm_module*s perf_tests/driver.c $name/*c -o obj/testit_clang_O3 -lrt
+    gcc -O2 obj/wasm_module*s perf_tests/driver.c libwasm/* $name/*c -o obj/testit_O2 -lrt -lm
+    gcc -O3 obj/wasm_module*s perf_tests/driver.c libwasm/* $name/*c -o obj/testit_O3 -lrt -lm
+    clang -O3 obj/wasm_module*s perf_tests/driver.c libwasm/* $name/*c -o obj/testit_clang_O3 -lrt -lm
 
     if [ $? -ne 0 ]; then
       echo "Build of test $wast failed. Bailing."
